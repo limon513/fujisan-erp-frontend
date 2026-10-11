@@ -1,0 +1,51 @@
+/** Formatting helpers for Bangladesh: BDT with lakh/crore grouping, Asia/Dhaka dates. */
+
+const TIMEZONE = "Asia/Dhaka";
+
+const bdtFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "BDT",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
+
+const numberFormatter = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 });
+
+/** 4850000 → "BDT 48,50,000" (en-IN gives lakh/crore grouping). */
+export const formatBDT = (amount) =>
+  amount == null || amount === "" ? "—" : bdtFormatter.format(Number(amount)).replace("BDT", "৳");
+
+export const formatNumber = (value) =>
+  value == null || value === "" ? "—" : numberFormatter.format(Number(value));
+
+/** 4850000 → "48.5 Lac", 125000000 → "12.5 Cr" — for dashboards and cards. */
+export const formatBDTShort = (amount) => {
+  if (amount == null || amount === "") return "—";
+  const value = Number(amount);
+  const abs = Math.abs(value);
+  if (abs >= 1e7) return `৳${numberFormatter.format(value / 1e7)} Cr`;
+  if (abs >= 1e5) return `৳${numberFormatter.format(value / 1e5)} Lac`;
+  return formatBDT(value);
+};
+
+export const formatDate = (value) =>
+  value
+    ? new Intl.DateTimeFormat("en-GB", {
+        timeZone: TIMEZONE,
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(value))
+    : "—";
+
+export const formatDateTime = (value) =>
+  value
+    ? new Intl.DateTimeFormat("en-GB", {
+        timeZone: TIMEZONE,
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(value))
+    : "—";
