@@ -23,6 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useCan } from "@/modules/auth/auth-provider";
 import ApiStatus from "./api-status";
 
 const isActive = (pathname, href) => pathname === href || pathname.startsWith(`${href}/`);
@@ -76,8 +77,25 @@ function NavItem({ item, pathname, onNavigate }) {
 // Reads the current path, so it must render inside <Suspense> (Cache Components).
 function SidebarNav({ onNavigate }) {
   const pathname = usePathname();
+  const can = useCan();
 
-  return navigation.map((group) => (
+  // Hide links the user has no permission for (items without `permission` are always shown)
+  const visible = navigation
+    .map((group) => ({
+      ...group,
+      items: group.items
+        .map((item) =>
+          item.children
+            ? { ...item, children: item.children.filter((c) => !c.permission || can(c.permission)) }
+            : item,
+        )
+        .filter((item) =>
+          item.children ? item.children.length > 0 : !item.permission || can(item.permission),
+        ),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  return visible.map((group) => (
     <SidebarGroup key={group.label}>
       <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
       <SidebarMenu>

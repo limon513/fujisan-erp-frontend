@@ -2,7 +2,6 @@
 
 import { Fragment, Suspense } from "react";
 import { usePathname } from "next/navigation";
-import { LogOut, UserRound } from "lucide-react";
 import { findNavItem } from "@/config/navigation";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
@@ -13,17 +12,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import ThemeToggle from "./theme-toggle";
+import UserMenu from "./user-menu";
 
 // Reads the current path, so it must render inside <Suspense> (Cache Components).
 function HeaderBreadcrumb() {
@@ -48,7 +38,10 @@ export default function AppHeader() {
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
+      <Separator
+        orientation="vertical"
+        className="mr-2 self-center data-[orientation=vertical]:h-4"
+      />
 
       <Breadcrumb className="min-w-0 flex-1">
         <Suspense fallback={null}>
@@ -58,28 +51,7 @@ export default function AppHeader() {
 
       <ThemeToggle />
 
-      {/* Placeholder user menu — wired to the auth session in Phase 1 */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full" aria-label="Account">
-            <Avatar className="size-8">
-              <AvatarFallback>
-                <UserRound className="size-4" />
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuLabel>My account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem disabled>
-            <UserRound /> Profile
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
-            <LogOut /> Sign out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <UserMenu />
     </header>
   );
 }
