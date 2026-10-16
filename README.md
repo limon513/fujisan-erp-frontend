@@ -38,3 +38,9 @@ src/
 - `cacheComponents` is enabled: components using `usePathname`/`useSearchParams` must be inside
   `<Suspense>`; no `Math.random()`/`Date.now()` during render in prerendered components.
 - Route protection uses `proxy.js` (the old `middleware.js` name is deprecated).
+
+## Deploying to Vercel
+
+Import the repo in Vercel and set `BACKEND_URL` (the Render API URL, no trailing slash),
+`NEXT_PUBLIC_APP_NAME` and `NEXT_PUBLIC_COMPANY_NAME`. Rewrites are resolved at build time, so
+redeploy after changing `BACKEND_URL`. Full guide: backend repo `docs/05-deployment.md`.
