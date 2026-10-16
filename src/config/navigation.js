@@ -1,5 +1,6 @@
 import {
   Network,
+  ScrollText,
   Banknote,
   BarChart3,
   Boxes,
@@ -130,6 +131,14 @@ export const navigation = [
         phase: 1,
       },
       { title: "Users", href: "/users", icon: UserCog, module: "user", phase: 1 },
+      {
+        title: "Audit Log",
+        href: "/audit-logs",
+        icon: ScrollText,
+        module: "audit-log",
+        permission: "audit-log.view",
+        phase: 1,
+      },
       { title: "Settings", href: "/settings", icon: Settings, module: "setting", phase: 1 },
     ],
   },
