@@ -130,7 +130,14 @@ export const navigation = [
         module: "role",
         phase: 1,
       },
-      { title: "Users", href: "/users", icon: UserCog, module: "user", phase: 1 },
+      {
+        title: "User Accounts",
+        href: "/users",
+        icon: UserCog,
+        module: "user",
+        permission: "user.view",
+        phase: 1,
+      },
       {
         title: "Audit Log",
         href: "/audit-logs",
