@@ -128,6 +128,7 @@ export const navigation = [
         href: "/roles",
         icon: ShieldCheck,
         module: "role",
+        permission: "role.view",
         phase: 1,
       },
       {
