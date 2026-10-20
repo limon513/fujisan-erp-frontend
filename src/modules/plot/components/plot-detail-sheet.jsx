@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import ConfirmDialog from "@/components/common/confirm-dialog";
+import StatusBadge from "@/components/common/status-badge";
 import { formatBDT, formatDateTime, formatNumber } from "@/lib/format";
 import { toastError } from "@/lib/notify";
 import { useCan } from "@/modules/auth/auth-provider";
@@ -20,6 +21,7 @@ import { plots } from "../api";
 import { FACING_LABELS, HISTORY_LABELS } from "../constants";
 import ChangePriceDialog from "./change-price-dialog";
 import PlotFormDialog from "./plot-form-dialog";
+import PlotStatusActions from "./plot-status-actions";
 import PlotStatusBadge from "./plot-status-badge";
 
 const Row = ({ label, children }) => (
@@ -31,10 +33,15 @@ const Row = ({ label, children }) => (
 
 const LOCKED = ["BOOKED", "SOLD"];
 
-/**
- * Plot details with history. `children` lets callers (e.g. the plot map) add action buttons —
- * hold / release / block arrive in step 2.5.
- */
+const HOLD_LABELS = {
+  ACTIVE: "Active",
+  RELEASED: "Released",
+  EXPIRED: "Expired",
+  CONVERTED: "Booked",
+};
+const HOLD_TONES = { ACTIVE: "amber", RELEASED: "gray", EXPIRED: "gray", CONVERTED: "blue" };
+
+/** Plot details, status actions and history. `children(plot)` lets callers add more buttons. */
 export default function PlotDetailSheet({ plotId, onClose, children }) {
   const can = useCan();
   const { data: plot, isLoading } = plots.useItem(plotId);
@@ -104,6 +111,7 @@ export default function PlotDetailSheet({ plotId, onClose, children }) {
               )}
 
               <div className="flex flex-wrap gap-2">
+                <PlotStatusActions plot={plot} />
                 {children?.(plot)}
                 {can("plot.edit") && (
                   <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
@@ -126,6 +134,40 @@ export default function PlotDetailSheet({ plotId, onClose, children }) {
                   </Button>
                 )}
               </div>
+
+              {plot.holdHistory.length > 0 && (
+                <section className="space-y-2">
+                  <h3 className="text-sm font-medium">Holds</h3>
+                  <div className="divide-y rounded-lg border text-sm">
+                    {plot.holdHistory.map((h) => (
+                      <div key={h.id} className="space-y-0.5 px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium">
+                            {h.days} day{h.days === 1 ? "" : "s"} · requested by{" "}
+                            {h.requestedBy.fullName}
+                          </span>
+                          <StatusBadge tone={HOLD_TONES[h.status]}>
+                            {HOLD_LABELS[h.status]}
+                          </StatusBadge>
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                          Placed {formatDateTime(h.createdAt)} by{" "}
+                          {h.heldBy.employee?.fullName ?? h.heldBy.username}
+                          {h.prospectName && ` · for ${h.prospectName}`} · {h.reason}
+                        </p>
+                        {h.releasedAt && (
+                          <p className="text-muted-foreground text-xs">
+                            Ended {formatDateTime(h.releasedAt)}
+                            {h.releasedBy &&
+                              ` by ${h.releasedBy.employee?.fullName ?? h.releasedBy.username}`}
+                            {h.releaseReason && ` · ${h.releaseReason}`}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <section className="space-y-2">
                 <h3 className="text-sm font-medium">Status history</h3>
