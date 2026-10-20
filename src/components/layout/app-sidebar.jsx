@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCan } from "@/modules/auth/auth-provider";
+import { useCompany } from "@/modules/setting/api";
 import ApiStatus from "./api-status";
 
 const isActive = (pathname, href) => pathname === href || pathname.startsWith(`${href}/`);
@@ -123,6 +124,7 @@ function SidebarNavSkeleton() {
 
 export default function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar();
+  const { data: company } = useCompany();
   const closeOnMobile = () => isMobile && setOpenMobile(false);
 
   return (
@@ -140,7 +142,7 @@ export default function AppSidebar() {
                     {process.env.NEXT_PUBLIC_APP_NAME ?? "Real Estate ERP"}
                   </span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {process.env.NEXT_PUBLIC_COMPANY_NAME ?? ""}
+                    {company?.name ?? process.env.NEXT_PUBLIC_COMPANY_NAME ?? ""}
                   </span>
                 </div>
               </Link>

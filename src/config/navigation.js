@@ -147,7 +147,14 @@ export const navigation = [
         permission: "audit-log.view",
         phase: 1,
       },
-      { title: "Settings", href: "/settings", icon: Settings, module: "setting", phase: 1 },
+      {
+        title: "Settings",
+        href: "/settings",
+        icon: Settings,
+        module: "setting",
+        permission: "setting.view",
+        phase: 1,
+      },
     ],
   },
 ];
@@ -165,7 +172,10 @@ export const flatNavigation = navigation.flatMap((group) =>
   ),
 );
 
+/** Pages that aren't in the sidebar but still need a breadcrumb. */
+const otherPages = [{ title: "My profile", href: "/profile", phase: 1, trail: ["My profile"] }];
+
 export const findNavItem = (pathname) =>
-  flatNavigation
+  [...flatNavigation, ...otherPages]
     .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0];
