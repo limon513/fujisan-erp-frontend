@@ -67,3 +67,11 @@ export const formatDateOnly = (value) =>
 
 /** ISO date/datetime → "YYYY-MM-DD" for <input type="date"> */
 export const toDateInput = (value) => (value ? String(value).slice(0, 10) : "");
+
+/** 523 → "523 B", 95_000 → "93 KB", 2_400_000 → "2.3 MB" */
+export const formatFileSize = (bytes) =>
+  bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 * 1024
+      ? `${Math.round(bytes / 1024)} KB`
+      : `${(bytes / 1024 / 1024).toFixed(1)} MB`;

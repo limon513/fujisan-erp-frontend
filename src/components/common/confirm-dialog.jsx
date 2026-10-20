@@ -13,7 +13,10 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
-/** Confirmation modal. `onConfirm` may be async; the dialog closes when it resolves. */
+/**
+ * Confirmation modal. `onConfirm` may be async. Navigate from `onClosed` (runs after the close
+ * animation), never straight after confirming — see FormDialog.
+ */
 export default function ConfirmDialog({
   open,
   onOpenChange,
@@ -23,10 +26,18 @@ export default function ConfirmDialog({
   destructive = false,
   loading = false,
   onConfirm,
+  onClosed,
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent
+        onCloseAutoFocus={(event) => {
+          if (onClosed) {
+            event.preventDefault();
+            onClosed();
+          }
+        }}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description && <AlertDialogDescription>{description}</AlertDialogDescription>}

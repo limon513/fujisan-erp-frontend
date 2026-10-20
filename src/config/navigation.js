@@ -52,7 +52,14 @@ export const navigation = [
           { title: "Sources", href: "/crm/sources", permission: "lead-source.view" },
         ],
       },
-      { title: "Customers", href: "/customers", icon: UserRound, module: "customer", phase: 2 },
+      {
+        title: "Customers",
+        href: "/customers",
+        icon: UserRound,
+        module: "customer",
+        permission: "customer.view",
+        phase: 2,
+      },
       {
         title: "Projects",
         icon: Building2,

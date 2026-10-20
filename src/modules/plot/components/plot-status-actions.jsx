@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Ban, CircleCheck, Hand, Unlock } from "lucide-react";
@@ -11,6 +11,7 @@ import FormDialog from "@/components/common/form-dialog";
 import FormField, { applyApiErrors } from "@/components/common/form-field";
 import ResourceSelect from "@/components/common/resource-select";
 import { useCan } from "@/modules/auth/auth-provider";
+import { customers } from "@/modules/customer/api";
 import { employees } from "@/modules/organization/api";
 import { plots } from "../api";
 
@@ -18,6 +19,7 @@ const holdSchema = z.object({
   requestedById: z.string().min(1, "Who asked for the hold?"),
   days: z.coerce.number().int().min(1, "1–90").max(90, "1–90"),
   reason: z.string().trim().min(3, "Give a reason"),
+  customerId: z.string(),
   prospectName: z.string(),
   prospectMobile: z.string(),
 });
@@ -33,24 +35,32 @@ function HoldDialog({ plot, open, onOpenChange }) {
       requestedById: "",
       days: plot.project.defaultHoldDays ?? 7,
       reason: "",
+      customerId: "",
       prospectName: "",
       prospectMobile: "",
     },
   });
+  const customerId = useWatch({ control: form.control, name: "customerId" });
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    setError(null);
-    try {
-      await holdPlot.mutateAsync({ id: plot.id, ...values });
-      toast.success(
-        `Plot ${plot.code} is on hold for ${values.days} day${values.days === 1 ? "" : "s"}`,
-      );
-      onOpenChange(false);
-    } catch (apiError) {
-      if (!applyApiErrors(apiError, form.setError, Object.keys(holdSchema.shape)))
-        setError(apiError.message);
-    }
-  });
+  const onSubmit = form.handleSubmit(
+    async ({ customerId: chosen, prospectName, prospectMobile, ...values }) => {
+      setError(null);
+      try {
+        await holdPlot.mutateAsync({
+          id: plot.id,
+          ...values,
+          ...(chosen ? { customerId: chosen } : { prospectName, prospectMobile }),
+        });
+        toast.success(
+          `Plot ${plot.code} is on hold for ${values.days} day${values.days === 1 ? "" : "s"}`,
+        );
+        onOpenChange(false);
+      } catch (apiError) {
+        if (!applyApiErrors(apiError, form.setError, Object.keys(holdSchema.shape)))
+          setError(apiError.message);
+      }
+    },
+  );
 
   return (
     <FormDialog
@@ -89,20 +99,39 @@ function HoldDialog({ plot, open, onOpenChange }) {
           placeholder="Customer visiting on Friday"
         />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField
-          control={form.control}
-          name="prospectName"
-          label="Prospect name"
-          description="Optional"
-        />
-        <FormField
-          control={form.control}
-          name="prospectMobile"
-          label="Prospect mobile"
-          description="Optional"
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="customerId"
+        label="Customer"
+        description="Choose an existing customer, or leave empty and note the prospect below."
+        render={(field) => (
+          <ResourceSelect
+            id="customerId"
+            resource={customers}
+            params={{ sortBy: "fullName" }}
+            value={field.value}
+            onChange={field.onChange}
+            emptyLabel="Not a customer yet"
+            getLabel={(c) => `${c.fullName} (${c.customerCode})`}
+          />
+        )}
+      />
+      {!customerId && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="prospectName"
+            label="Prospect name"
+            description="Optional"
+          />
+          <FormField
+            control={form.control}
+            name="prospectMobile"
+            label="Prospect mobile"
+            description="Optional"
+          />
+        </div>
+      )}
     </FormDialog>
   );
 }
