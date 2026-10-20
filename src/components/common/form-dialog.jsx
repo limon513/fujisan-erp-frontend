@@ -14,7 +14,13 @@ import {
 import { FieldGroup } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 
-/** Modal form shell: title, error banner, fields (children), Cancel / Save. */
+/**
+ * Modal form shell: title, error banner, fields (children), Cancel / Save.
+ *
+ * `onClosed` runs after the close animation has finished. Navigate from there, not right after
+ * closing: Next keeps the previous page alive in the background, and a dialog unmounted mid-close
+ * leaves the page blocked (body pointer-events: none).
+ */
 export default function FormDialog({
   open,
   onOpenChange,
@@ -25,11 +31,20 @@ export default function FormDialog({
   error,
   submitLabel = "Save",
   className,
+  onClosed,
   children,
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={className ?? "sm:max-w-lg"}>
+      <DialogContent
+        className={className ?? "sm:max-w-lg"}
+        onCloseAutoFocus={(event) => {
+          if (onClosed) {
+            event.preventDefault();
+            onClosed();
+          }
+        }}
+      >
         <form onSubmit={onSubmit} noValidate className="flex max-h-[85svh] flex-col gap-4">
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>

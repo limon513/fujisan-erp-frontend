@@ -110,6 +110,15 @@ export const http = {
   patch: (url, body) => api.patch(url, body).then(unwrap),
   put: (url, body) => api.put(url, body).then(unwrap),
   delete: (url) => api.delete(url).then(unwrap),
+  /** multipart/form-data upload; onProgress(0..100) is optional */
+  upload: (url, formData, onProgress) =>
+    api
+      .post(url, formData, {
+        timeout: 120_000,
+        onUploadProgress: (event) =>
+          onProgress && event.total && onProgress(Math.round((event.loaded / event.total) * 100)),
+      })
+      .then(unwrap),
 };
 
 export default api;

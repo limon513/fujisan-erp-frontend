@@ -59,10 +59,9 @@ export const navigation = [
         module: "project",
         phase: 2,
         children: [
-          { title: "Projects", href: "/projects", permission: "project.view" },
-          { title: "Blocks", href: "/projects/blocks", permission: "block.view" },
-          { title: "Roads", href: "/projects/roads", permission: "road.view" },
-          { title: "Plot Map", href: "/projects/plot-map", permission: "unit.view" },
+          { title: "All projects", href: "/projects", permission: "project.view" },
+          { title: "Plots", href: "/plots", permission: "plot.view" },
+          { title: "Plot Map", href: "/plot-map", permission: "plot.view" },
         ],
       },
       { title: "Sales", href: "/sales", icon: Briefcase, module: "sales", phase: 3 },
