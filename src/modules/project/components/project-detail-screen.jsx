@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, MapPin, Pencil } from "lucide-react";
+import { ArrowLeft, Map, MapPin, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -128,11 +128,20 @@ export default function ProjectDetailScreen() {
               </span>
             }
             actions={
-              canEdit && (
-                <Button variant="outline" onClick={() => setEditing(true)}>
-                  <Pencil /> Edit project
-                </Button>
-              )
+              <div className="flex gap-2">
+                {can("plot.view") && (
+                  <Button variant="outline" asChild>
+                    <Link href={`/plot-map?project=${project.id}`}>
+                      <Map /> Plot map
+                    </Link>
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button variant="outline" onClick={() => setEditing(true)}>
+                    <Pencil /> Edit project
+                  </Button>
+                )}
+              </div>
             }
           />
           <Tabs defaultValue="overview">
