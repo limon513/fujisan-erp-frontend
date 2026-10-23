@@ -13,6 +13,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
@@ -25,14 +26,25 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useCan } from "@/modules/auth/auth-provider";
 import { useCompany } from "@/modules/setting/api";
+import { useInboxCount } from "@/modules/approval/api";
 import ApiStatus from "./api-status";
 
 const isActive = (pathname, href) => pathname === href || pathname.startsWith(`${href}/`);
+
+function ApprovalsBadge() {
+  const { data: count } = useInboxCount();
+  return count ? (
+    <SidebarMenuBadge aria-label={`${count} waiting for you`}>{count}</SidebarMenuBadge>
+  ) : null;
+}
+
+const BADGES = { approvals: ApprovalsBadge };
 
 function NavItem({ item, pathname, onNavigate }) {
   const Icon = item.icon;
 
   if (!item.children) {
+    const Badge = BADGES[item.badge];
     return (
       <SidebarMenuItem>
         <SidebarMenuButton asChild isActive={isActive(pathname, item.href)} tooltip={item.title}>
@@ -41,6 +53,7 @@ function NavItem({ item, pathname, onNavigate }) {
             <span>{item.title}</span>
           </Link>
         </SidebarMenuButton>
+        {Badge && <Badge />}
       </SidebarMenuItem>
     );
   }

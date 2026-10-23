@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import PageHeader from "@/components/common/page-header";
 import { formatBDTShort, formatDateTime, formatNumber, formatTimeLeft } from "@/lib/format";
+import { useInboxCount } from "@/modules/approval/api";
 import { useAuth } from "@/modules/auth/auth-provider";
 import PlotStatusBar from "@/modules/project/components/plot-status-bar";
 import { PLOT_STATUS } from "@/modules/project/constants";
@@ -154,6 +155,7 @@ function Inventory({ inventory }) {
 export default function DashboardScreen() {
   const { user } = useAuth();
   const { data, isLoading, error } = useDashboard();
+  const { data: waiting = 0 } = useInboxCount();
   const firstName = (user.employee?.fullName ?? user.username).split(/\s+/)[0];
 
   return (
@@ -214,26 +216,30 @@ export default function DashboardScreen() {
                 </CardContent>
               </Card>
             )}
-            {(data.customers || data.people) && (
-              <div className="grid content-start gap-3 sm:grid-cols-2">
-                {data.customers && (
-                  <StatTile
-                    label={data.customers.scope === "OWN" ? "My customers" : "Customers"}
-                    value={formatNumber(data.customers.total)}
-                    sub={`${formatNumber(data.customers.newThisMonth)} new this month`}
-                    href="/customers"
-                  />
-                )}
-                {data.people && (
-                  <StatTile
-                    label="Employees"
-                    value={formatNumber(data.people.activeEmployees)}
-                    sub="Active and on leave"
-                    href="/organization/employees"
-                  />
-                )}
-              </div>
-            )}
+            <div className="grid content-start gap-3 sm:grid-cols-2">
+              <StatTile
+                label="Waiting for your approval"
+                value={formatNumber(waiting)}
+                sub={waiting ? "Open your approvals" : "Nothing waiting"}
+                href="/approvals"
+              />
+              {data.customers && (
+                <StatTile
+                  label={data.customers.scope === "OWN" ? "My customers" : "Customers"}
+                  value={formatNumber(data.customers.total)}
+                  sub={`${formatNumber(data.customers.newThisMonth)} new this month`}
+                  href="/customers"
+                />
+              )}
+              {data.people && (
+                <StatTile
+                  label="Employees"
+                  value={formatNumber(data.people.activeEmployees)}
+                  sub="Active and on leave"
+                  href="/organization/employees"
+                />
+              )}
+            </div>
           </div>
 
           {!data.inventory && !data.customers && !data.myHolds && (

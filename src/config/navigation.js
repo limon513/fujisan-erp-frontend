@@ -7,6 +7,7 @@ import {
   Briefcase,
   CalendarClock,
   CircleX,
+  ClipboardCheck,
   Clock,
   UserCog,
   FileText,
@@ -22,6 +23,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  Workflow,
   Building2,
 } from "lucide-react";
 
@@ -31,11 +33,22 @@ import {
  * - `module`: backend module name; hidden when the module is disabled for this client.
  * - `permission`: required "<module>.view" permission (enforced from Phase 1).
  * - `phase`: roadmap phase that delivers the screen; unbuilt screens show a placeholder.
+ * - `badge`: live count shown next to the link ("approvals" = requests waiting for me).
  */
 export const navigation = [
   {
     label: "Overview",
-    items: [{ title: "Dashboard", href: "/dashboard", icon: Gauge, module: "dashboard", phase: 1 }],
+    items: [
+      { title: "Dashboard", href: "/dashboard", icon: Gauge, module: "dashboard", phase: 1 },
+      {
+        title: "Approvals",
+        href: "/approvals",
+        icon: ClipboardCheck,
+        module: "approval",
+        phase: 3,
+        badge: "approvals",
+      },
+    ],
   },
   {
     label: "Sales & CRM",
@@ -144,6 +157,14 @@ export const navigation = [
         module: "user",
         permission: "user.view",
         phase: 1,
+      },
+      {
+        title: "Approval Chains",
+        href: "/approval-chains",
+        icon: Workflow,
+        module: "approval",
+        permission: "approval-workflow.view",
+        phase: 3,
       },
       {
         title: "Audit Log",
