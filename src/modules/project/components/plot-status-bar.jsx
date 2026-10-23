@@ -2,20 +2,31 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { formatNumber } from "@/lib/format";
 import { PLOT_STATUS } from "../constants";
 
-/** Stacked bar of plot counts by status (blueprint colours). */
+/**
+ * Stacked bar of plot counts by status (blueprint colours). Segments are separated by a 2px gap
+ * of the surface colour so neighbouring statuses stay distinct; the colours always come with the
+ * text legend (status is never shown by colour alone).
+ */
 export default function PlotStatusBar({ counts, showLegend = true }) {
   const total = counts?.total ?? 0;
 
   return (
     <div className="space-y-2">
-      <div className="bg-muted flex h-2.5 overflow-hidden rounded-full">
+      <div
+        className={`flex h-2.5 gap-[2px] overflow-hidden rounded-full ${total > 0 ? "" : "bg-muted"}`}
+        role="img"
+        aria-label={Object.entries(PLOT_STATUS)
+          .map(([status, { label }]) => `${label} ${counts?.[status] ?? 0}`)
+          .join(", ")}
+      >
         {total > 0 &&
           Object.entries(PLOT_STATUS).map(([status, { label, color }]) =>
             counts[status] ? (
               <Tooltip key={status}>
                 <TooltipTrigger asChild>
                   <div
-                    style={{ width: `${(counts[status] / total) * 100}%`, backgroundColor: color }}
+                    className="min-w-1"
+                    style={{ flexGrow: counts[status], flexBasis: 0, backgroundColor: color }}
                   />
                 </TooltipTrigger>
                 <TooltipContent>

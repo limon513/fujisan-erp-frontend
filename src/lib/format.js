@@ -75,3 +75,14 @@ export const formatFileSize = (bytes) =>
     : bytes < 1024 * 1024
       ? `${Math.round(bytes / 1024)} KB`
       : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+/** Time until a future instant, e.g. "in 5 h", "in 2 days", "in 20 min" (or "now"). */
+export function formatTimeLeft(value, now = Date.now()) {
+  const ms = new Date(value).getTime() - now;
+  if (ms <= 60_000) return "now";
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `in ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `in ${hours} h`;
+  return `in ${Math.round(hours / 24)} days`;
+}
