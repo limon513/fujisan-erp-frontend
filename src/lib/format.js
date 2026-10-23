@@ -54,6 +54,17 @@ export const formatDateTime = (value) =>
 export const formatMobile = (value) =>
   value && /^8801\d{9}$/.test(value) ? `0${value.slice(3, 7)}-${value.slice(7)}` : (value ?? "—");
 
+/** Stored 8801711000001 → "01711000001" for a mobile input. */
+export const toMobileInput = (value) => (value ? formatMobile(value).replace("-", "") : "");
+
+/** ISO instant → "YYYY-MM-DDTHH:mm" in the browser's time, for <input type="datetime-local">. */
+export function toDateTimeInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** Date-only values come back as UTC midnight; show the calendar date as stored. */
 export const formatDateOnly = (value) =>
   value

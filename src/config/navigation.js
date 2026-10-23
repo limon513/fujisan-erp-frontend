@@ -63,6 +63,7 @@ export const navigation = [
           { title: "Follow-ups", href: "/crm/follow-ups", permission: "follow-up.view" },
           { title: "Site Visits", href: "/crm/site-visits", permission: "site-visit.view" },
           { title: "Sources", href: "/crm/sources", permission: "lead-source.view" },
+          { title: "Campaigns", href: "/crm/campaigns", permission: "campaign.view" },
         ],
       },
       {

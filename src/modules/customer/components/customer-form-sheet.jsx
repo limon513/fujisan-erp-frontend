@@ -22,7 +22,7 @@ import { Spinner } from "@/components/ui/spinner";
 import FormField, { applyApiErrors } from "@/components/common/form-field";
 import ResourceSelect from "@/components/common/resource-select";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { formatMobile, toDateInput } from "@/lib/format";
+import { toDateInput, toMobileInput } from "@/lib/format";
 import { useAuth } from "@/modules/auth/auth-provider";
 import { employees } from "@/modules/organization/api";
 import { customers, useDuplicateCheck } from "../api";
@@ -55,20 +55,21 @@ const schema = z.object({
   mobile: z.string().trim().min(11, "Enter a mobile number"),
 });
 
-const mobileInput = (value) => (value ? formatMobile(value).replace("-", "") : "");
-
 const toValues = (c) => ({
   ...Object.fromEntries(Object.keys(FIELDS).map((key) => [key, c[key] ?? ""])),
   dateOfBirth: toDateInput(c.dateOfBirth),
-  mobile: mobileInput(c.mobile),
-  altMobile: mobileInput(c.altMobile),
+  mobile: toMobileInput(c.mobile),
+  altMobile: toMobileInput(c.altMobile),
   ownerId: c.owner?.id ?? "",
 });
 
 const NONE = "__none__";
 
-/** Add (customer = null) or edit a customer. onSaved(customer) after a create. */
-export default function CustomerFormSheet({ open, onOpenChange, customer, onSaved }) {
+/**
+ * Add (customer = null) or edit a customer. onSaved(customer) after a create.
+ * `initial` prefills a new customer (e.g. from a lead: { fullName, mobile, email, owner, ... }).
+ */
+export default function CustomerFormSheet({ open, onOpenChange, customer, initial, onSaved }) {
   const { user: me } = useAuth();
   const create = customers.useCreate();
   const update = customers.useUpdate();
@@ -85,14 +86,14 @@ export default function CustomerFormSheet({ open, onOpenChange, customer, onSave
 
   const form = useForm({
     resolver: zodResolver(schema),
-    values: customer ? toValues(customer) : FIELDS,
+    values: customer ? toValues(customer) : initial ? toValues({ ...FIELDS, ...initial }) : FIELDS,
   });
   const { control } = form;
   const [mobile, nidNumber] = useWatch({ control, name: ["mobile", "nidNumber"] });
   const debouncedMobile = useDebouncedValue(mobile, 400);
   const debouncedNid = useDebouncedValue(nidNumber, 400);
   const { data: matches } = useDuplicateCheck({
-    mobile: customer && mobileInput(customer.mobile) === debouncedMobile ? "" : debouncedMobile,
+    mobile: customer && toMobileInput(customer.mobile) === debouncedMobile ? "" : debouncedMobile,
     nidNumber: customer && customer.nidNumber === debouncedNid ? "" : debouncedNid,
     excludeId: customer?.id,
   });
