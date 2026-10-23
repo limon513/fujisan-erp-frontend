@@ -97,3 +97,16 @@ export function formatTimeLeft(value, now = Date.now()) {
   if (hours < 48) return `in ${hours} h`;
   return `in ${Math.round(hours / 24)} days`;
 }
+
+/** Time since a past instant: "just now", "5 min ago", "3 h ago", "2 days ago", then the date. */
+export function formatTimeAgo(value, now = Date.now()) {
+  const ms = now - new Date(value).getTime();
+  if (ms < 60_000) return "just now";
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return formatDate(value);
+}

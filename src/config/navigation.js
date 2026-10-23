@@ -201,7 +201,10 @@ export const flatNavigation = navigation.flatMap((group) =>
 );
 
 /** Pages that aren't in the sidebar but still need a breadcrumb. */
-const otherPages = [{ title: "My profile", href: "/profile", phase: 1, trail: ["My profile"] }];
+const otherPages = [
+  { title: "My profile", href: "/profile", phase: 1, trail: ["My profile"] },
+  { title: "Notifications", href: "/notifications", phase: 3, trail: ["Notifications"] },
+];
 
 export const findNavItem = (pathname) =>
   [...flatNavigation, ...otherPages]

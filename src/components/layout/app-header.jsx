@@ -12,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import NotificationBell from "@/modules/notification/components/notification-bell";
 import ThemeToggle from "./theme-toggle";
 import UserMenu from "./user-menu";
 
@@ -50,6 +51,8 @@ export default function AppHeader() {
       </Breadcrumb>
 
       <ThemeToggle />
+
+      <NotificationBell />
 
       <UserMenu />
     </header>
