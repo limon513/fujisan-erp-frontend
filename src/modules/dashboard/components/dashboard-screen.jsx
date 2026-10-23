@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PageHeader from "@/components/common/page-header";
 import { formatBDTShort, formatDateTime, formatNumber, formatTimeLeft } from "@/lib/format";
 import { useInboxCount } from "@/modules/approval/api";
-import { useAuth } from "@/modules/auth/auth-provider";
+import { useAuth, useCan } from "@/modules/auth/auth-provider";
+import { useFollowUpCounts, useVisitCounts } from "@/modules/crm/api";
 import PlotStatusBar from "@/modules/project/components/plot-status-bar";
 import { PLOT_STATUS } from "@/modules/project/constants";
 import { useDashboard } from "../api";
@@ -156,6 +157,11 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { data, isLoading, error } = useDashboard();
   const { data: waiting = 0 } = useInboxCount();
+  const can = useCan();
+  // Sales staff see their own work; managers without an employee record see everything in scope
+  const mine = Boolean(user.employee);
+  const { data: followUpCounts } = useFollowUpCounts({ mine, enabled: can("follow-up.view") });
+  const { data: visitCounts } = useVisitCounts({ mine, enabled: can("site-visit.view") });
   const firstName = (user.employee?.fullName ?? user.username).split(/\s+/)[0];
 
   return (
@@ -217,6 +223,26 @@ export default function DashboardScreen() {
               </Card>
             )}
             <div className="grid content-start gap-3 sm:grid-cols-2">
+              {followUpCounts && (
+                <StatTile
+                  label={mine ? "My follow-ups today" : "Follow-ups today"}
+                  value={formatNumber(followUpCounts.today + followUpCounts.overdue)}
+                  sub={
+                    followUpCounts.overdue
+                      ? `${formatNumber(followUpCounts.overdue)} overdue`
+                      : "None overdue"
+                  }
+                  href="/crm/follow-ups"
+                />
+              )}
+              {visitCounts && (
+                <StatTile
+                  label={mine ? "My site visits today" : "Site visits today"}
+                  value={formatNumber(visitCounts.today)}
+                  sub={`${formatNumber(visitCounts.upcoming)} booked later`}
+                  href="/crm/site-visits"
+                />
+              )}
               <StatTile
                 label="Waiting for your approval"
                 value={formatNumber(waiting)}

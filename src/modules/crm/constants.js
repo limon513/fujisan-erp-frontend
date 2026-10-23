@@ -31,3 +31,36 @@ export function budgetText(lead, format) {
   if (max != null) return `up to ${format(max)}`;
   return "—";
 }
+
+export const FOLLOW_UP_TYPES = {
+  CALL: "Call",
+  WHATSAPP: "WhatsApp",
+  SMS: "SMS",
+  EMAIL: "Email",
+  MEETING: "Meeting",
+};
+
+export const TRANSPORTS = {
+  OFFICE_CAR: "Office car",
+  OWN: "Own transport",
+  OTHER: "Other",
+};
+
+export const INTEREST = {
+  HOT: { label: "Hot", tone: "red" },
+  WARM: { label: "Warm", tone: "amber" },
+  COLD: { label: "Cold", tone: "blue" },
+};
+
+export const VISIT_STATUS = {
+  SCHEDULED: { label: "Scheduled", tone: "blue" },
+  VISITED: { label: "Visited", tone: "green" },
+  NO_SHOW: { label: "Didn't come", tone: "red" },
+  CANCELLED: { label: "Cancelled", tone: "gray" },
+};
+
+export const FOLLOW_UP_STATUS = {
+  PENDING: { label: "To do", tone: "amber" },
+  DONE: { label: "Done", tone: "green" },
+  CANCELLED: { label: "Cancelled", tone: "gray" },
+};

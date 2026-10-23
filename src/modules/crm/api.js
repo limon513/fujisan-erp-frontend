@@ -7,6 +7,26 @@ import { createResource } from "@/lib/resource";
 export const leadSources = createResource("/lead-sources");
 export const campaigns = createResource("/campaigns");
 export const leads = createResource("/leads");
+export const followUps = createResource("/follow-ups");
+export const siteVisits = createResource("/site-visits");
+
+/** { overdue, today, upcoming } follow-ups (mine = assigned to me). */
+export const useFollowUpCounts = ({ mine = false, enabled = true } = {}) =>
+  useQuery({
+    queryKey: ["follow-ups", "counts", mine],
+    queryFn: () => http.get("/follow-ups/counts", mine ? { mine: true } : {}).then((r) => r.data),
+    enabled,
+    refetchInterval: 60_000,
+  });
+
+/** { today, upcoming, missed } site visits. */
+export const useVisitCounts = ({ mine = false, enabled = true } = {}) =>
+  useQuery({
+    queryKey: ["site-visits", "counts", mine],
+    queryFn: () => http.get("/site-visits/counts", mine ? { mine: true } : {}).then((r) => r.data),
+    enabled,
+    refetchInterval: 60_000,
+  });
 
 /** Live duplicate check while typing: other leads and customers with this mobile/email. */
 export function useLeadDuplicates({ mobile, email, excludeId }) {

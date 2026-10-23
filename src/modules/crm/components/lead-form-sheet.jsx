@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import FormField, { applyApiErrors } from "@/components/common/form-field";
 import ResourceSelect from "@/components/common/resource-select";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
-import { toDateTimeInput, toMobileInput } from "@/lib/format";
+import { toMobileInput } from "@/lib/format";
 import { useAuth } from "@/modules/auth/auth-provider";
 import { projects } from "@/modules/project/api";
 import { campaigns, leads, leadSources, useAssignees, useLeadDuplicates } from "../api";
@@ -81,7 +81,7 @@ const toValues = (lead) => ({
   preferredProjectId: lead.preferredProject?.id ?? "",
   budgetMin: lead.budgetMin == null ? "" : String(Number(lead.budgetMin)),
   budgetMax: lead.budgetMax == null ? "" : String(Number(lead.budgetMax)),
-  nextFollowUpAt: toDateTimeInput(lead.nextFollowUpAt),
+  nextFollowUpAt: "",
   owner: SELF,
 });
 
@@ -155,7 +155,7 @@ export default function LeadFormSheet({ open, onOpenChange, lead, onSaved }) {
     setError(null);
     const body = {
       ...values,
-      nextFollowUpAt: nextFollowUpAt ? new Date(nextFollowUpAt).toISOString() : null,
+      ...(isNew && nextFollowUpAt && { nextFollowUpAt: new Date(nextFollowUpAt).toISOString() }),
       ...(confirmDuplicate && { confirmDuplicate: true }),
       ...(isNew &&
         canAssign &&
@@ -338,15 +338,18 @@ export default function LeadFormSheet({ open, onOpenChange, lead, onSaved }) {
             </FieldSet>
 
             <FieldSet>
-              <FieldLegend>Follow-up</FieldLegend>
+              <FieldLegend>{isNew ? "Follow-up" : "Notes"}</FieldLegend>
               <FieldGroup>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={control}
-                    name="nextFollowUpAt"
-                    label="Next follow-up"
-                    type="datetime-local"
-                  />
+                  {isNew && (
+                    <FormField
+                      control={control}
+                      name="nextFollowUpAt"
+                      label="First follow-up call"
+                      type="datetime-local"
+                      description="Optional. Later ones are planned on the lead page."
+                    />
+                  )}
                   {isNew && canAssign && (
                     <FormField
                       control={control}

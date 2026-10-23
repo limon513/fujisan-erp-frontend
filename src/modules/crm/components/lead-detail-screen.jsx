@@ -52,6 +52,7 @@ import CustomerFormSheet from "@/modules/customer/components/customer-form-sheet
 import { leads, useAssignees, useLeadDuplicates } from "../api";
 import { ACTIVITY_TYPES, budgetText, LEAD_STATUS, PICKABLE_STATUSES } from "../constants";
 import LeadFormSheet from "./lead-form-sheet";
+import NextSteps from "./next-steps";
 
 const ACTIVITY_TEXT = {
   CREATED: "added the lead",
@@ -62,6 +63,9 @@ const ACTIVITY_TEXT = {
   EMAIL: "sent an email",
   MEETING: "met them",
   CONVERTED: "converted the lead",
+  FOLLOW_UP_SCHEDULED: "planned a follow-up",
+  SITE_VISIT_SCHEDULED: "booked a site visit",
+  SITE_VISIT: "recorded the site visit",
 };
 
 function activityText(activity) {
@@ -535,6 +539,9 @@ export default function LeadDetailScreen() {
 
           {/* Phones: log, details, history. Wide screens: details in a side column */}
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="lg:col-start-1">
+              <NextSteps lead={lead} />
+            </div>
             {can("lead.edit") && !closed && (
               <Card className="lg:col-start-1">
                 <CardHeader>
