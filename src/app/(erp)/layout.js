@@ -11,7 +11,8 @@ export default function ErpLayout({ children }) {
         <AppSidebar />
         <SidebarInset>
           <AppHeader />
-          <main className="flex-1 p-4 md:p-6">{children}</main>
+          {/* SidebarInset is the page's <main>; a second one would confuse screen readers */}
+          <div className="flex-1 p-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </AuthGate>

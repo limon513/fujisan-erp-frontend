@@ -46,3 +46,23 @@ export const INSTALLMENT_STATUS = {
   PAID: { label: "Paid", tone: "green" },
   WAIVED: { label: "Waived", tone: "blue" },
 };
+
+export const PAYMENT_METHODS = {
+  CASH: "Cash",
+  BANK_TRANSFER: "Bank transfer",
+  CHEQUE: "Cheque",
+  BKASH: "bKash",
+  NAGAD: "Nagad",
+  CARD: "Card",
+};
+
+export const PAYMENT_STATUS = {
+  PENDING: { label: "To verify", tone: "amber" },
+  VERIFIED: { label: "Verified", tone: "green" },
+  REJECTED: { label: "Rejected", tone: "red" },
+  REVERSED: { label: "Reversed", tone: "gray" },
+};
+
+/** "Down payment" / "Installment 3" */
+export const installmentLabel = (i) =>
+  i.number === 0 ? "Down payment" : `Installment ${i.number}`;

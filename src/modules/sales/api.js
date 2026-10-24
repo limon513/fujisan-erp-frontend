@@ -6,6 +6,16 @@ import { createResource } from "@/lib/resource";
 
 export const paymentPlans = createResource("/payment-plans");
 export const bookings = createResource("/bookings");
+export const collections = createResource("/collections");
+export const installments = createResource("/installments");
+
+/** Overdue, due this month and collected this month. */
+export const useEmiSummary = ({ enabled = true } = {}) =>
+  useQuery({
+    queryKey: ["installments", "summary"],
+    queryFn: () => http.get("/installments/summary").then((res) => res.data),
+    enabled,
+  });
 
 /** Price after discount and the schedule, for the booking form (nothing saved). */
 export const useBookingQuote = (input) =>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ClipboardCheck, Undo2 } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, Landmark, Undo2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,9 +30,16 @@ import {
   formatNumber,
 } from "@/lib/format";
 import { toastError } from "@/lib/notify";
-import { useAuth } from "@/modules/auth/auth-provider";
+import { useAuth, useCan } from "@/modules/auth/auth-provider";
 import { bookings } from "../api";
-import { BOOKING_STATUS, INSTALLMENT_STATUS, planTerms } from "../constants";
+import {
+  BOOKING_STATUS,
+  INSTALLMENT_STATUS,
+  PAYMENT_METHODS,
+  PAYMENT_STATUS,
+  planTerms,
+} from "../constants";
+import PaymentDialog from "./payment-dialog";
 
 const APPROVAL_TEXT = {
   PENDING: "Waiting for the Sales Manager",
@@ -162,11 +169,119 @@ function WithdrawDialog({ booking, onDone }) {
   );
 }
 
+function Balance({ booking }) {
+  const b = booking.balance;
+  return (
+    <dl className="grid grid-cols-2 gap-3 text-sm">
+      <div>
+        <dt className="text-muted-foreground text-xs">Paid</dt>
+        <dd className="text-lg font-semibold tabular-nums">{formatBDT(b.paid)}</dd>
+      </div>
+      <div>
+        <dt className="text-muted-foreground text-xs">Still owed</dt>
+        <dd className="text-lg font-semibold tabular-nums">{formatBDT(b.outstanding)}</dd>
+      </div>
+      <div>
+        <dt className="text-muted-foreground text-xs">Overdue</dt>
+        <dd
+          className={`font-medium tabular-nums ${Number(b.overdue) > 0 ? "text-destructive" : ""}`}
+        >
+          {Number(b.overdue) > 0 ? `${formatBDT(b.overdue)} (${b.overdueCount})` : "Nothing"}
+        </dd>
+      </div>
+      <div>
+        <dt className="text-muted-foreground text-xs">Late fees</dt>
+        <dd className="font-medium tabular-nums">
+          {Number(b.lateFees) > 0 ? formatBDT(b.lateFees) : "None"}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+function Payments({ payments }) {
+  if (!payments.length) return <p className="text-muted-foreground text-sm">No payments yet.</p>;
+  return (
+    <ul className="divide-y rounded-lg border text-sm">
+      {payments.map((p) => (
+        <li key={p.id}>
+          <Link
+            href={`/collections/${p.id}`}
+            className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-medium tabular-nums">{formatBDT(p.amount)}</p>
+              <p className="text-muted-foreground text-xs">
+                {p.receiptNo ?? p.paymentNo} · {formatDateOnly(p.paidOn)} ·{" "}
+                {PAYMENT_METHODS[p.method]}
+              </p>
+            </div>
+            <StatusBadge tone={PAYMENT_STATUS[p.status].tone}>
+              {PAYMENT_STATUS[p.status].label}
+            </StatusBadge>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RegisterDialog({ booking, onDone }) {
+  const register = bookings.usePostAction("register");
+  const [deedNo, setDeedNo] = useState("");
+  const [registeredOn, setRegisteredOn] = useState(() => new Date().toISOString().slice(0, 10));
+  const owed = Number(booking.balance.outstanding);
+  return (
+    <FormDialog
+      open
+      onOpenChange={(open) => !open && onDone()}
+      title={`Register ${booking.bookingNo}?`}
+      description={`Plot ${booking.plot.code} becomes Sold.${owed > 0 ? ` ${formatBDT(booking.balance.outstanding)} is still owed; payments continue after registration.` : ""}`}
+      submitting={register.isPending}
+      submitLabel="Register"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        try {
+          await register.mutateAsync({ id: booking.id, deedNo, registeredOn });
+          toast.success(`${booking.bookingNo} registered — plot ${booking.plot.code} sold`);
+          onDone();
+        } catch (apiError) {
+          toastError(apiError);
+        }
+      }}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="deedNo">Deed number</Label>
+          <Input
+            id="deedNo"
+            value={deedNo}
+            onChange={(e) => setDeedNo(e.target.value)}
+            placeholder="1234/2026"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="registeredOn">Registered on</Label>
+          <Input
+            id="registeredOn"
+            type="date"
+            value={registeredOn}
+            onChange={(e) => setRegisteredOn(e.target.value)}
+          />
+        </div>
+      </div>
+    </FormDialog>
+  );
+}
+
 export default function BookingDetailScreen() {
   const { id } = useParams();
   const { user: me } = useAuth();
   const { data: booking, isLoading, error } = bookings.useItem(id);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const can = useCan();
 
   return (
     <RequirePermission permission="booking.view">
@@ -193,6 +308,18 @@ export default function BookingDetailScreen() {
                 <StatusBadge tone={BOOKING_STATUS[booking.status].tone}>
                   {BOOKING_STATUS[booking.status].label}
                 </StatusBadge>
+                {["CONFIRMED", "REGISTERED"].includes(booking.status) &&
+                  can("collection.create") &&
+                  Number(booking.balance.outstanding) > 0 && (
+                    <Button size="sm" onClick={() => setPaying(true)}>
+                      <Wallet /> Record payment
+                    </Button>
+                  )}
+                {booking.status === "CONFIRMED" && can("booking.register") && (
+                  <Button size="sm" variant="outline" onClick={() => setRegistering(true)}>
+                    <Landmark /> Register
+                  </Button>
+                )}
                 {booking.status === "PENDING_APPROVAL" &&
                   (me.isSuperAdmin || me.employee?.id === booking.owner?.id) && (
                     <Button size="sm" variant="outline" onClick={() => setWithdrawing(true)}>
@@ -225,6 +352,23 @@ export default function BookingDetailScreen() {
                   <Prices booking={booking} />
                 </CardContent>
               </Card>
+              {booking.installments.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Payments</CardTitle>
+                    {booking.status === "REGISTERED" && (
+                      <CardDescription>
+                        Registered {formatDateOnly(booking.registeredOn)}
+                        {booking.deedNo && ` · deed ${booking.deedNo}`}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Balance booking={booking} />
+                    <Payments payments={booking.payments} />
+                  </CardContent>
+                </Card>
+              )}
               {booking.approval && (
                 <Card>
                   <CardHeader>
@@ -281,6 +425,8 @@ export default function BookingDetailScreen() {
             </div>
           </div>
           {withdrawing && <WithdrawDialog booking={booking} onDone={() => setWithdrawing(false)} />}
+          <PaymentDialog open={paying} onOpenChange={setPaying} booking={booking} />
+          {registering && <RegisterDialog booking={booking} onDone={() => setRegistering(false)} />}
         </>
       )}
     </RequirePermission>
