@@ -60,10 +60,16 @@ export const navigation = [
         phase: 3,
         children: [
           { title: "Leads", href: "/crm/leads", permission: "lead.view" },
+          { title: "Pipeline", href: "/crm/pipeline", permission: "lead.view" },
           { title: "Follow-ups", href: "/crm/follow-ups", permission: "follow-up.view" },
           { title: "Site Visits", href: "/crm/site-visits", permission: "site-visit.view" },
           { title: "Sources", href: "/crm/sources", permission: "lead-source.view" },
           { title: "Campaigns", href: "/crm/campaigns", permission: "campaign.view" },
+          {
+            title: "Assignment Rules",
+            href: "/crm/assignment-rules",
+            permission: "lead-assignment-rule.view",
+          },
         ],
       },
       {

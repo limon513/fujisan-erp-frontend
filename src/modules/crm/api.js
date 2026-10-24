@@ -1,13 +1,29 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { http } from "@/lib/api-client";
-import { createResource } from "@/lib/resource";
+import { cleanParams, createResource } from "@/lib/resource";
 
 export const leadSources = createResource("/lead-sources");
 export const campaigns = createResource("/campaigns");
 export const leads = createResource("/leads");
 export const followUps = createResource("/follow-ups");
+export const assignmentRules = createResource("/lead-assignment-rules");
+
+/** Kanban board: { columns: [{ status, count, leads }], closed: { converted, lost } }. */
+export const usePipeline = (params) =>
+  useQuery({
+    queryKey: ["leads", "pipeline", params],
+    queryFn: () => http.get("/leads/pipeline", cleanParams(params)).then((res) => res.data),
+    placeholderData: keepPreviousData,
+  });
+
+/** Plain list of rules (not paginated). */
+export const useAssignmentRules = () =>
+  useQuery({
+    queryKey: ["lead-assignment-rules", "all"],
+    queryFn: () => http.get("/lead-assignment-rules").then((res) => res.data),
+  });
 export const siteVisits = createResource("/site-visits");
 
 /** { overdue, today, upcoming } follow-ups (mine = assigned to me). */

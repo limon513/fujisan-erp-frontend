@@ -399,7 +399,7 @@ function OwnerSelect({ field, hasEmployee }) {
       </SelectTrigger>
       <SelectContent>
         {hasEmployee && <SelectItem value={SELF}>Me</SelectItem>}
-        <SelectItem value={POOL}>Nobody yet (pool)</SelectItem>
+        <SelectItem value={POOL}>Automatic (assignment rules)</SelectItem>
         {data.map((employee) => (
           <SelectItem key={employee.id} value={employee.id}>
             {employee.fullName} — {employee.designation.name}
