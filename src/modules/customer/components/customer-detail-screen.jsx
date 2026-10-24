@@ -406,7 +406,14 @@ export default function CustomerDetailScreen() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {can("booking.create") && (
+                <Button asChild>
+                  <Link href={`/bookings/new?customerId=${customer.id}`}>
+                    <FileText /> New booking
+                  </Link>
+                </Button>
+              )}
               {canEdit && (
                 <Button variant="outline" onClick={() => setEditing(true)}>
                   <Pencil /> Edit

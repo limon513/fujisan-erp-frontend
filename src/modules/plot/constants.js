@@ -19,4 +19,5 @@ export const HISTORY_LABELS = {
   BOOKING: "Booked",
   REGISTRATION: "Registered (sold)",
   CANCELLATION: "Booking cancelled",
+  BOOKING_REJECTED: "Booking rejected",
 };

@@ -100,7 +100,14 @@ export const navigation = [
           { title: "Payment Plans", href: "/sales/payment-plans", permission: "payment-plan.view" },
         ],
       },
-      { title: "Booking", href: "/bookings", icon: FileText, module: "booking", phase: 3 },
+      {
+        title: "Bookings",
+        href: "/bookings",
+        icon: FileText,
+        module: "booking",
+        permission: "booking.view",
+        phase: 3,
+      },
       { title: "EMI", href: "/emi", icon: CalendarClock, module: "emi", phase: 3 },
       { title: "Collection", href: "/collections", icon: Wallet, module: "collection", phase: 3 },
       {

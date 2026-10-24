@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ArrowRightLeft,
   CircleDot,
+  FileText,
   Ellipsis,
   MessageCircle,
   Pencil,
@@ -508,6 +509,15 @@ export default function LeadDetailScreen() {
                     {can("lead.edit") && can("customer.create") && !closed && (
                       <DropdownMenuItem onSelect={openDialog("convert")}>
                         <UserCheck /> Convert to customer
+                      </DropdownMenuItem>
+                    )}
+                    {can("booking.create") && !closed && lead.status !== "LOST" && (
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/bookings/new?leadId=${lead.id}${lead.preferredProject ? `&projectId=${lead.preferredProject.id}` : ""}`}
+                        >
+                          <FileText /> Book a plot
+                        </Link>
                       </DropdownMenuItem>
                     )}
                     {can("lead.delete") && (

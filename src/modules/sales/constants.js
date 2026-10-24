@@ -31,3 +31,18 @@ export function planTerms(plan) {
         : "No cancellation charge",
   };
 }
+
+export const BOOKING_STATUS = {
+  PENDING_APPROVAL: { label: "Waiting for approval", tone: "amber" },
+  CONFIRMED: { label: "Confirmed", tone: "blue" },
+  REGISTERED: { label: "Registered", tone: "green" },
+  REJECTED: { label: "Rejected", tone: "red" },
+  CANCELLED: { label: "Cancelled", tone: "gray" },
+};
+
+export const INSTALLMENT_STATUS = {
+  DUE: { label: "Due", tone: "gray" },
+  PARTIAL: { label: "Part paid", tone: "amber" },
+  PAID: { label: "Paid", tone: "green" },
+  WAIVED: { label: "Waived", tone: "blue" },
+};

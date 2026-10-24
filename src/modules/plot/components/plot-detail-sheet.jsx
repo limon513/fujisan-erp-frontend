@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeDollarSign, Pencil, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BadgeDollarSign, FileText, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,13 +50,24 @@ export default function PlotDetailSheet({ plotId, onClose, children }) {
   const [editing, setEditing] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Leave the page only after the sheet has closed (a sheet unmounted mid-close blocks the page)
+  const router = useRouter();
+  const [goTo, setGoTo] = useState(null);
 
   const locked = plot && LOCKED.includes(plot.status);
 
   return (
     <>
       <Sheet open={Boolean(plotId)} onOpenChange={(open) => !open && onClose()}>
-        <SheetContent className="overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
+        <SheetContent
+          className="overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-lg"
+          onCloseAutoFocus={(event) => {
+            if (!goTo) return;
+            event.preventDefault();
+            router.push(goTo);
+            setGoTo(null);
+          }}
+        >
           <SheetHeader className="border-b">
             <SheetTitle className="flex items-center gap-2">
               Plot {plot?.code ?? ""} {plot && <PlotStatusBadge status={plot.status} />}
@@ -111,6 +123,17 @@ export default function PlotDetailSheet({ plotId, onClose, children }) {
               )}
 
               <div className="flex flex-wrap gap-2">
+                {can("booking.create") && ["AVAILABLE", "HOLD"].includes(plot.status) && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setGoTo(`/bookings/new?plotId=${plot.id}&projectId=${plot.project.id}`);
+                      onClose();
+                    }}
+                  >
+                    <FileText /> Book
+                  </Button>
+                )}
                 <PlotStatusActions plot={plot} />
                 {children?.(plot)}
                 {can("plot.edit") && (

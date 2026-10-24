@@ -5,6 +5,17 @@ import { http } from "@/lib/api-client";
 import { createResource } from "@/lib/resource";
 
 export const paymentPlans = createResource("/payment-plans");
+export const bookings = createResource("/bookings");
+
+/** Price after discount and the schedule, for the booking form (nothing saved). */
+export const useBookingQuote = (input) =>
+  useQuery({
+    queryKey: ["bookings", "quote", input],
+    queryFn: () => http.post("/bookings/quote", input).then((res) => res.data),
+    enabled: Boolean(input.customerId && input.plotId && input.paymentPlanId),
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
 
 /** Schedule of a saved plan for a price. */
 export const usePlanSchedule = (planId, { price, startDate }) =>

@@ -20,6 +20,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import PageHeader from "@/components/common/page-header";
@@ -128,6 +130,10 @@ function Decision({ request }) {
   const [comment, setComment] = useState("");
   const [error, setError] = useState(null);
   const busy = approve.isPending || reject.isPending;
+  // Workflows with an adjustable amount (e.g. a booking's discount): approve as asked or change it
+  const adjustable = request.workflow.adjustableLabel;
+  const asked = request.approvedAmount ?? request.amount;
+  const [amount, setAmount] = useState(asked == null ? "" : String(Number(asked)));
 
   const run = async (decision) => {
     setError(null);
@@ -137,7 +143,12 @@ function Decision({ request }) {
     }
     try {
       const mutation = decision === "approve" ? approve : reject;
-      const result = await mutation.mutateAsync({ id: request.id, comment: comment.trim() });
+      const changed = adjustable && amount !== "" && Number(amount) !== Number(asked ?? 0);
+      const result = await mutation.mutateAsync({
+        id: request.id,
+        comment: comment.trim(),
+        ...(decision === "approve" && changed && { amount: Number(amount) }),
+      });
       setComment("");
       toast.success(
         decision === "reject"
@@ -160,6 +171,22 @@ function Decision({ request }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
+        {adjustable && (
+          <div className="space-y-1.5">
+            <Label htmlFor="approvedAmount">{adjustable}</Label>
+            <Input
+              id="approvedAmount"
+              inputMode="decimal"
+              className="max-w-56"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+            />
+            <p className="text-muted-foreground text-xs">
+              Asked: {asked == null ? "none" : formatBDT(asked)}. Change it to approve a different
+              amount.
+            </p>
+          </div>
+        )}
         <Textarea
           aria-label="Comment"
           placeholder="Comment (required when rejecting)"
