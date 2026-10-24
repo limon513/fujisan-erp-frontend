@@ -91,7 +91,15 @@ export const navigation = [
           { title: "Plot Map", href: "/plot-map", permission: "plot.view" },
         ],
       },
-      { title: "Sales", href: "/sales", icon: Briefcase, module: "sales", phase: 3 },
+      {
+        title: "Sales",
+        icon: Briefcase,
+        module: "sales",
+        phase: 3,
+        children: [
+          { title: "Payment Plans", href: "/sales/payment-plans", permission: "payment-plan.view" },
+        ],
+      },
       { title: "Booking", href: "/bookings", icon: FileText, module: "booking", phase: 3 },
       { title: "EMI", href: "/emi", icon: CalendarClock, module: "emi", phase: 3 },
       { title: "Collection", href: "/collections", icon: Wallet, module: "collection", phase: 3 },
