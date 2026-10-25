@@ -136,7 +136,18 @@ export const navigation = [
   {
     label: "Back Office",
     items: [
-      { title: "Accounts", href: "/accounts", icon: Landmark, module: "accounts", phase: 4 },
+      {
+        title: "Accounts",
+        icon: Landmark,
+        module: "account",
+        phase: 3,
+        children: [
+          { title: "Chart of Accounts", href: "/accounts", permission: "account.view" },
+          { title: "Journal", href: "/accounts/journals", permission: "journal.view" },
+          { title: "Trial Balance", href: "/accounts/trial-balance", permission: "account.view" },
+          { title: "Fiscal Years", href: "/accounts/fiscal-years", permission: "fiscal-year.view" },
+        ],
+      },
       { title: "Purchase", href: "/purchase", icon: ShoppingCart, module: "purchase", phase: 4 },
       { title: "Inventory", href: "/inventory", icon: Boxes, module: "inventory", phase: 4 },
       { title: "HR", href: "/hr", icon: Users, module: "hr", phase: 4 },

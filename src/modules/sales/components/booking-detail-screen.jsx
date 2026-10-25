@@ -360,6 +360,14 @@ export default function BookingDetailScreen() {
                       <CardDescription>
                         Registered {formatDateOnly(booking.registeredOn)}
                         {booking.deedNo && ` · deed ${booking.deedNo}`}
+                        {booking.journal.map((j) => (
+                          <span key={j.id}>
+                            {" · sale posted as "}
+                            <Link href={`/accounts/journals/${j.id}`} className="underline">
+                              {j.entryNo}
+                            </Link>
+                          </span>
+                        ))}
                       </CardDescription>
                     )}
                   </CardHeader>

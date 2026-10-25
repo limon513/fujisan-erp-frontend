@@ -9,8 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import ConfirmDialog from "@/components/common/confirm-dialog";
 import FormDialog from "@/components/common/form-dialog";
 import PageHeader from "@/components/common/page-header";
 import RequirePermission from "@/components/common/require-permission";
@@ -18,6 +24,7 @@ import StatusBadge from "@/components/common/status-badge";
 import { formatBDT, formatDateOnly, formatDateTime, formatMobile } from "@/lib/format";
 import { toastError } from "@/lib/notify";
 import { useAuth, useCan } from "@/modules/auth/auth-provider";
+import { useAccounts } from "@/modules/accounts/api";
 import { collections } from "../api";
 import { installmentLabel, PAYMENT_METHODS, PAYMENT_STATUS } from "../constants";
 
@@ -68,6 +75,72 @@ function ReasonDialog({ title, description, label, action, payment, onDone }) {
   );
 }
 
+const DEPOSIT_KEYS = {
+  CASH: "CASH",
+  BANK_TRANSFER: "BANK",
+  CHEQUE: "BANK",
+  CARD: "BANK",
+  BKASH: "BKASH",
+  NAGAD: "NAGAD",
+};
+
+/** Verify: choose where the money went (cash in hand, a bank or a mobile account). */
+function VerifyDialog({ payment, onDone }) {
+  const verify = collections.usePostAction("verify");
+  const { data: assets = [] } = useAccounts({ postable: true, type: "ASSET" });
+  // Cash, bank and mobile accounts: those under the same groups as the seeded money accounts
+  const moneyParents = new Set(
+    assets
+      .filter((a) => ["CASH", "BANK", "BKASH", "NAGAD"].includes(a.systemKey))
+      .map((a) => a.parentId),
+  );
+  const options = assets.filter((a) => moneyParents.has(a.parentId));
+  const fallback = options.find((a) => a.systemKey === DEPOSIT_KEYS[payment.method])?.id ?? "";
+  const [chosen, setChosen] = useState("");
+  const depositAccountId = chosen || fallback;
+  const [error, setError] = useState(null);
+  return (
+    <FormDialog
+      open
+      onOpenChange={(open) => !open && onDone()}
+      title={`Verify ${formatBDT(payment.amount)}?`}
+      description="Only when the money has arrived. A money receipt number is issued, the amount is applied to the schedule and posted to the accounts."
+      error={error}
+      submitting={verify.isPending}
+      submitLabel="Verify"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        try {
+          const result = await verify.mutateAsync({
+            id: payment.id,
+            ...(depositAccountId && { depositAccountId }),
+          });
+          toast.success(`Verified — money receipt ${result.receiptNo}`);
+          onDone();
+        } catch (apiError) {
+          setError(apiError.message);
+        }
+      }}
+    >
+      <div className="space-y-1.5">
+        <Label htmlFor="depositAccountId">Deposited to</Label>
+        <Select value={depositAccountId} onValueChange={setChosen}>
+          <SelectTrigger id="depositAccountId" className="w-full">
+            <SelectValue placeholder="Loading accounts…" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.code} {a.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </FormDialog>
+  );
+}
+
 function Row({ label, children }) {
   return (
     <div className="flex justify-between gap-4">
@@ -82,7 +155,6 @@ export default function PaymentDetailScreen() {
   const can = useCan();
   const { user: me } = useAuth();
   const { data: payment, isLoading, error } = collections.useItem(id);
-  const verify = collections.usePostAction("verify");
   const [dialog, setDialog] = useState(null); // verify | reject | reverse
 
   const enteredByMe = payment?.enteredBy?.id === me.id;
@@ -218,6 +290,24 @@ export default function PaymentDetailScreen() {
                     <Row label="Cheque date">{formatDateOnly(payment.chequeDate)}</Row>
                   )}
                   {payment.note && <Row label="Note">{payment.note}</Row>}
+                  {payment.depositAccount && (
+                    <Row label="Deposited to">
+                      {payment.depositAccount.code} {payment.depositAccount.name}
+                    </Row>
+                  )}
+                  {payment.journal.length > 0 && (
+                    <Row label="Posted as">
+                      {payment.journal.map((j, i) => (
+                        <span key={j.id}>
+                          {i > 0 && ", "}
+                          <Link href={`/accounts/journals/${j.id}`} className="underline">
+                            {j.entryNo}
+                          </Link>
+                          {j.kind === "REVERSAL" && " (reversal)"}
+                        </span>
+                      ))}
+                    </Row>
+                  )}
                   <Row label="Entered by">{payment.enteredBy?.name ?? "—"}</Row>
                   {payment.verifiedBy && (
                     <Row label={payment.status === "REJECTED" ? "Rejected by" : "Verified by"}>
@@ -228,23 +318,7 @@ export default function PaymentDetailScreen() {
               </CardContent>
             </Card>
           </div>
-          <ConfirmDialog
-            open={dialog === "verify"}
-            onOpenChange={(open) => !open && setDialog(null)}
-            title={`Verify ${formatBDT(payment.amount)}?`}
-            description="Only when the money has arrived. A money receipt number is issued and the amount is applied to the schedule."
-            confirmLabel="Verify"
-            loading={verify.isPending}
-            onConfirm={async () => {
-              try {
-                const result = await verify.mutateAsync({ id: payment.id });
-                toast.success(`Verified — money receipt ${result.receiptNo}`);
-                setDialog(null);
-              } catch (apiError) {
-                toastError(apiError);
-              }
-            }}
-          />
+          {dialog === "verify" && <VerifyDialog payment={payment} onDone={() => setDialog(null)} />}
           {dialog === "reject" && (
             <ReasonDialog
               title="Reject this entry?"
