@@ -8,6 +8,16 @@ export const paymentPlans = createResource("/payment-plans");
 export const bookings = createResource("/bookings");
 export const collections = createResource("/collections");
 export const installments = createResource("/installments");
+export const cancellations = createResource("/cancellations");
+
+/** What cancelling a booking would refund (paid − the plan's cancellation charge). */
+export const useCancellationQuote = (bookingId, { enabled = true } = {}) =>
+  useQuery({
+    queryKey: ["cancellations", "quote", bookingId],
+    queryFn: () => http.get("/cancellations/quote", { bookingId }).then((res) => res.data),
+    enabled: Boolean(bookingId) && enabled,
+    retry: false,
+  });
 
 /** Overdue, due this month and collected this month. */
 export const useEmiSummary = ({ enabled = true } = {}) =>

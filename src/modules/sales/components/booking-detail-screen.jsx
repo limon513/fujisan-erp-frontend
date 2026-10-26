@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ClipboardCheck, Landmark, Undo2, Wallet } from "lucide-react";
+import { ArrowLeft, CircleX, ClipboardCheck, Landmark, Undo2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +39,7 @@ import {
   PAYMENT_STATUS,
   planTerms,
 } from "../constants";
+import { CancelBookingDialog, CancellationCard } from "./cancellation-parts";
 import PaymentDialog from "./payment-dialog";
 
 const APPROVAL_TEXT = {
@@ -281,6 +282,7 @@ export default function BookingDetailScreen() {
   const [withdrawing, setWithdrawing] = useState(false);
   const [paying, setPaying] = useState(false);
   const [registering, setRegistering] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const can = useCan();
 
   return (
@@ -313,6 +315,20 @@ export default function BookingDetailScreen() {
                   Number(booking.balance.outstanding) > 0 && (
                     <Button size="sm" onClick={() => setPaying(true)}>
                       <Wallet /> Record payment
+                    </Button>
+                  )}
+                {booking.status === "CONFIRMED" &&
+                  can("cancellation.create") &&
+                  !booking.cancellations.some((c) =>
+                    ["PENDING_APPROVAL", "APPROVED"].includes(c.status),
+                  ) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      onClick={() => setCancelling(true)}
+                    >
+                      <CircleX /> Cancel booking
                     </Button>
                   )}
                 {booking.status === "CONFIRMED" && can("booking.register") && (
@@ -352,6 +368,9 @@ export default function BookingDetailScreen() {
                   <Prices booking={booking} />
                 </CardContent>
               </Card>
+              {booking.cancellations[0] && (
+                <CancellationCard cancellation={booking.cancellations[0]} booking={booking} />
+              )}
               {booking.installments.length > 0 && (
                 <Card>
                   <CardHeader>
@@ -435,6 +454,9 @@ export default function BookingDetailScreen() {
           {withdrawing && <WithdrawDialog booking={booking} onDone={() => setWithdrawing(false)} />}
           <PaymentDialog open={paying} onOpenChange={setPaying} booking={booking} />
           {registering && <RegisterDialog booking={booking} onDone={() => setRegistering(false)} />}
+          {cancelling && (
+            <CancelBookingDialog booking={booking} onDone={() => setCancelling(false)} />
+          )}
         </>
       )}
     </RequirePermission>

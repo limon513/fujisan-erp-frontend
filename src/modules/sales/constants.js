@@ -66,3 +66,11 @@ export const PAYMENT_STATUS = {
 /** "Down payment" / "Installment 3" */
 export const installmentLabel = (i) =>
   i.number === 0 ? "Down payment" : `Installment ${i.number}`;
+
+export const CANCELLATION_STATUS = {
+  PENDING_APPROVAL: { label: "Waiting for approval", tone: "amber" },
+  APPROVED: { label: "Refund due", tone: "blue" },
+  REFUNDED: { label: "Refunded", tone: "green" },
+  REJECTED: { label: "Rejected", tone: "red" },
+  WITHDRAWN: { label: "Withdrawn", tone: "gray" },
+};

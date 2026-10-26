@@ -125,10 +125,11 @@ export const navigation = [
         phase: 3,
       },
       {
-        title: "Cancellation",
+        title: "Cancellations",
         href: "/cancellations",
         icon: CircleX,
         module: "cancellation",
+        permission: "cancellation.view",
         phase: 3,
       },
     ],

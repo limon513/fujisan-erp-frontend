@@ -45,3 +45,29 @@ export function useFiscalYearAction() {
     onSuccess: () => queryClient.invalidateQueries(),
   });
 }
+
+/** Where money of each method lands by default (mirrors the backend). */
+export const DEPOSIT_KEYS = {
+  CASH: "CASH",
+  BANK_TRANSFER: "BANK",
+  CHEQUE: "BANK",
+  CARD: "BANK",
+  BKASH: "BKASH",
+  NAGAD: "NAGAD",
+};
+
+/**
+ * Cash, bank and mobile accounts (those under the same groups as the seeded money accounts),
+ * and the default one for a payment method.
+ */
+export function useMoneyAccounts(method) {
+  const { data: assets = [] } = useAccounts({ postable: true, type: "ASSET" });
+  const parents = new Set(
+    assets
+      .filter((a) => ["CASH", "BANK", "BKASH", "NAGAD"].includes(a.systemKey))
+      .map((a) => a.parentId),
+  );
+  const options = assets.filter((a) => parents.has(a.parentId));
+  const fallback = options.find((a) => a.systemKey === DEPOSIT_KEYS[method])?.id ?? "";
+  return { options, fallback };
+}

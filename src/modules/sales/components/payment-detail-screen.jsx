@@ -24,7 +24,7 @@ import StatusBadge from "@/components/common/status-badge";
 import { formatBDT, formatDateOnly, formatDateTime, formatMobile } from "@/lib/format";
 import { toastError } from "@/lib/notify";
 import { useAuth, useCan } from "@/modules/auth/auth-provider";
-import { useAccounts } from "@/modules/accounts/api";
+import { useMoneyAccounts } from "@/modules/accounts/api";
 import { collections } from "../api";
 import { installmentLabel, PAYMENT_METHODS, PAYMENT_STATUS } from "../constants";
 
@@ -75,27 +75,10 @@ function ReasonDialog({ title, description, label, action, payment, onDone }) {
   );
 }
 
-const DEPOSIT_KEYS = {
-  CASH: "CASH",
-  BANK_TRANSFER: "BANK",
-  CHEQUE: "BANK",
-  CARD: "BANK",
-  BKASH: "BKASH",
-  NAGAD: "NAGAD",
-};
-
 /** Verify: choose where the money went (cash in hand, a bank or a mobile account). */
 function VerifyDialog({ payment, onDone }) {
   const verify = collections.usePostAction("verify");
-  const { data: assets = [] } = useAccounts({ postable: true, type: "ASSET" });
-  // Cash, bank and mobile accounts: those under the same groups as the seeded money accounts
-  const moneyParents = new Set(
-    assets
-      .filter((a) => ["CASH", "BANK", "BKASH", "NAGAD"].includes(a.systemKey))
-      .map((a) => a.parentId),
-  );
-  const options = assets.filter((a) => moneyParents.has(a.parentId));
-  const fallback = options.find((a) => a.systemKey === DEPOSIT_KEYS[payment.method])?.id ?? "";
+  const { options, fallback } = useMoneyAccounts(payment.method);
   const [chosen, setChosen] = useState("");
   const depositAccountId = chosen || fallback;
   const [error, setError] = useState(null);
