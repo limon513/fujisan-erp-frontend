@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Banknote, ClipboardCheck, Undo2 } from "lucide-react";
+import { ArrowRight, Banknote, ClipboardCheck, FileText, FileUp, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,11 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import FormDialog from "@/components/common/form-dialog";
 import ResourceSelect from "@/components/common/resource-select";
 import StatusBadge from "@/components/common/status-badge";
-import { formatBDT, formatDateOnly, toDateInput } from "@/lib/format";
+import { formatBDT, formatDateOnly, formatFileSize, toDateInput } from "@/lib/format";
 import { useCan } from "@/modules/auth/auth-provider";
 import { useMoneyAccounts } from "@/modules/accounts/api";
 import { customers } from "@/modules/customer/api";
-import { transfers, useTransferQuote } from "../api";
+import { transfers, uploadAgreement, useReplaceAgreement, useTransferQuote } from "../api";
 import { PAYMENT_METHODS, TRANSFER_STATUS } from "../constants";
 
 function Row({ label, children, strong }) {
@@ -42,6 +42,8 @@ export function TransferBookingDialog({ booking, onDone }) {
   const { data: quote, isLoading, error: quoteError } = useTransferQuote(booking.id);
   const [toCustomerId, setToCustomerId] = useState("");
   const [reason, setReason] = useState("");
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   return (
     <FormDialog
@@ -50,10 +52,14 @@ export function TransferBookingDialog({ booking, onDone }) {
       title={`Transfer ${booking.bookingNo} to another customer`}
       description="The Sales Manager and Accounts Manager approve it; either may change the fee. The booking moves once the fee is received."
       error={error}
-      submitting={create.isPending}
+      submitting={uploading || create.isPending}
       submitLabel="Send for approval"
       onSubmit={async (event) => {
         event.preventDefault();
+        if (!file) {
+          setError("Attach the signed transfer agreement");
+          return;
+        }
         if (!toCustomerId) {
           setError("Choose the new owner");
           return;
@@ -63,7 +69,14 @@ export function TransferBookingDialog({ booking, onDone }) {
           return;
         }
         try {
-          const result = await create.mutateAsync({ bookingId: booking.id, toCustomerId, reason });
+          setUploading(true);
+          const agreementFileId = await uploadAgreement(file).finally(() => setUploading(false));
+          const result = await create.mutateAsync({
+            bookingId: booking.id,
+            toCustomerId,
+            reason,
+            agreementFileId,
+          });
           toast.success(`${result.transferNo} sent for approval`);
           onDone();
         } catch (apiError) {
@@ -111,6 +124,18 @@ export function TransferBookingDialog({ booking, onDone }) {
           onChange={(e) => setReason(e.target.value)}
           placeholder="Sold to a relative, moving abroad, …"
         />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="agreement">Signed transfer agreement</Label>
+        <Input
+          id="agreement"
+          type="file"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+        <p className="text-muted-foreground text-xs">
+          PDF or a photo of the signed agreement. The approvers see it before deciding.
+        </p>
       </div>
     </FormDialog>
   );
@@ -223,6 +248,8 @@ export function CompleteTransferDialog({ transfer, onDone }) {
 export function TransferCard({ transfer }) {
   const can = useCan();
   const withdraw = transfers.usePostAction("withdraw");
+  const replace = useReplaceAgreement();
+  const fileInput = useRef(null);
   const [completing, setCompleting] = useState(false);
   const status = TRANSFER_STATUS[transfer.status];
   return (
@@ -253,6 +280,22 @@ export function TransferCard({ transfer }) {
             {formatBDT(transfer.feeAmount)}
           </Row>
         </dl>
+        {transfer.agreement ? (
+          <a
+            href={transfer.agreement.url}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:bg-muted/50 flex items-center gap-2 rounded-md border px-2.5 py-2 text-sm"
+          >
+            <FileText className="text-muted-foreground size-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">{transfer.agreement.originalName}</span>
+            <span className="text-muted-foreground shrink-0 text-xs">
+              {formatFileSize(transfer.agreement.size)}
+            </span>
+          </a>
+        ) : (
+          <p className="text-muted-foreground text-xs">No agreement on file.</p>
+        )}
         {transfer.completedOn && (
           <p className="text-muted-foreground text-xs">
             Completed {formatDateOnly(transfer.completedOn)}
@@ -273,6 +316,35 @@ export function TransferCard({ transfer }) {
             <Button size="sm" onClick={() => setCompleting(true)}>
               <Banknote /> Receive fee
             </Button>
+          )}
+          {transfer.status === "PENDING_APPROVAL" && can("transfer.create") && (
+            <>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  try {
+                    await replace.mutateAsync({ id: transfer.id, file });
+                    toast.success("Agreement replaced");
+                  } catch (apiError) {
+                    toast.error(apiError.message);
+                  }
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={replace.isPending}
+                onClick={() => fileInput.current?.click()}
+              >
+                <FileUp /> {replace.isPending ? "Uploading…" : "Replace agreement"}
+              </Button>
+            </>
           )}
           {transfer.status === "PENDING_APPROVAL" && can("transfer.create") && (
             <Button

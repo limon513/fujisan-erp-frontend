@@ -1,6 +1,6 @@
 "use client";
 
-import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { http } from "@/lib/api-client";
 import { createResource } from "@/lib/resource";
 
@@ -10,6 +10,24 @@ export const collections = createResource("/collections");
 export const installments = createResource("/installments");
 export const cancellations = createResource("/cancellations");
 export const transfers = createResource("/transfers");
+
+/** Uploads a signed transfer agreement (image or PDF); returns the file id. */
+export async function uploadAgreement(file) {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("category", "AGREEMENT");
+  return (await http.upload("/files", form)).data.id;
+}
+
+/** Swaps the agreement of a transfer that still waits for approval. */
+export function useReplaceAgreement() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, file }) =>
+      http.put(`/transfers/${id}/agreement`, { fileId: await uploadAgreement(file) }),
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}
 
 /** The plan's transfer fee for a booking and what has been paid on it. */
 export const useTransferQuote = (bookingId, { enabled = true } = {}) =>
