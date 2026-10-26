@@ -20,6 +20,7 @@ import PlotStatusBar from "./plot-status-bar";
 import ProjectChildrenTab from "./project-children-tab";
 import ProjectFormDialog from "./project-form-dialog";
 import PlotsTable from "@/modules/plot/components/plots-table";
+import ProjectCostsTab from "@/modules/accounts/components/project-costs-tab";
 
 const Detail = ({ label, children }) => (
   <div className="grid grid-cols-[9rem_1fr] gap-2 py-1.5 text-sm">
@@ -153,6 +154,7 @@ export default function ProjectDetailScreen() {
               <TabsTrigger value="blocks">Blocks ({project.blockCount})</TabsTrigger>
               <TabsTrigger value="roads">Roads ({project.roadCount})</TabsTrigger>
               <TabsTrigger value="layout">Layout</TabsTrigger>
+              {can("project-cost.view") && <TabsTrigger value="costs">Costs</TabsTrigger>}
             </TabsList>
             <TabsContent value="overview" className="pt-2">
               <Overview project={project} />
@@ -171,6 +173,11 @@ export default function ProjectDetailScreen() {
             <TabsContent value="layout" className="pt-2">
               <LayoutTab project={project} canEdit={canEdit} />
             </TabsContent>
+            {can("project-cost.view") && (
+              <TabsContent value="costs" className="pt-2">
+                <ProjectCostsTab project={project} />
+              </TabsContent>
+            )}
           </Tabs>
           <ProjectFormDialog open={editing} onOpenChange={setEditing} project={project} />
         </>

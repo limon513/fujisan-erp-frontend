@@ -6,6 +6,15 @@ import { cleanParams, createResource } from "@/lib/resource";
 
 export const accounts = createResource("/accounts");
 export const journals = createResource("/journals");
+export const projectCosts = createResource("/project-costs");
+
+/** A project's land cost, cost of sales so far, cost per unsold sqft and gross profit. */
+export const useProjectCostSummary = (projectId) =>
+  useQuery({
+    queryKey: ["project-costs", "summary", projectId],
+    queryFn: () => http.get("/project-costs/summary", { projectId }).then((res) => res.data),
+    enabled: Boolean(projectId),
+  });
 
 /** The chart (plain array, by code). `balances` adds each account's balance. */
 export const useAccounts = (params = {}, options = {}) =>

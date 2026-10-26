@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+/** "entries" → "entry", "bookings" → "booking". */
+const singular = (label) => label.replace(/ies$/, "y").replace(/s$/, "");
+
 /**
  * Ranked horizontal bars with the name and value as text beside each bar (one series, one
  * colour). Rows: [{ id, name, amount, count?, href? }].
@@ -29,7 +32,7 @@ export default function BarList({ rows, format, countLabel, empty = "Nothing in 
                 {format(row.amount)}
                 {row.count != null && countLabel && (
                   <span className="text-muted-foreground ml-1.5 text-xs">
-                    {row.count} {row.count === 1 ? countLabel.replace(/s$/, "") : countLabel}
+                    {row.count} {row.count === 1 ? singular(countLabel) : countLabel}
                   </span>
                 )}
               </span>
