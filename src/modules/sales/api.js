@@ -11,6 +11,28 @@ export const installments = createResource("/installments");
 export const cancellations = createResource("/cancellations");
 export const transfers = createResource("/transfers");
 
+/** Replaces the unpaid parts of an approved refund: [{ dueDate, amount }]. */
+export function useRefundSchedule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, parts }) =>
+      http.put(`/cancellations/${id}/refund-schedule`, { parts }).then((res) => res.data),
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}
+
+/** Paid so far, still to pay and the next part, for a cancellation with its refund parts. */
+export function refundTotals(c) {
+  const parts = c.refundParts ?? [];
+  const paid = parts.filter((p) => p.status === "PAID").reduce((t, p) => t + Number(p.amount), 0);
+  return {
+    paid,
+    due: c.status === "APPROVED" ? Number(c.refundAmount) - paid : 0,
+    next: parts.find((p) => p.status === "DUE") ?? null,
+    count: parts.length,
+  };
+}
+
 /** Uploads a signed transfer agreement (image or PDF); returns the file id. */
 export async function uploadAgreement(file) {
   const form = new FormData();

@@ -79,10 +79,20 @@ export default function CancellationsScreen() {
         cell: ({ row }) => (
           <div className="leading-tight tabular-nums">
             <p className="font-medium">{formatBDT(row.original.refundAmount)}</p>
-            {Number(row.original.chargeAmount) > 0 && (
+            {row.original.status === "APPROVED" && Number(row.original.refundPaid) > 0 ? (
               <p className="text-muted-foreground text-xs">
-                −{formatBDT(row.original.chargeAmount)} charge
+                {formatBDT(row.original.refundDue)} still to pay
               </p>
+            ) : row.original.nextRefund ? (
+              <p className="text-muted-foreground text-xs">
+                next {formatDateOnly(row.original.nextRefund.dueDate)}
+              </p>
+            ) : (
+              Number(row.original.chargeAmount) > 0 && (
+                <p className="text-muted-foreground text-xs">
+                  −{formatBDT(row.original.chargeAmount)} charge
+                </p>
+              )
             )}
           </div>
         ),

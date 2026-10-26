@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Banknote, ClipboardCheck, Undo2 } from "lucide-react";
+import { Banknote, CalendarRange, ClipboardCheck, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,10 +19,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import FormDialog from "@/components/common/form-dialog";
 import StatusBadge from "@/components/common/status-badge";
+import { cn } from "@/lib/utils";
 import { formatBDT, formatDateOnly, toDateInput } from "@/lib/format";
 import { useCan } from "@/modules/auth/auth-provider";
 import { useMoneyAccounts } from "@/modules/accounts/api";
-import { cancellations, useCancellationQuote } from "../api";
+import { cancellations, refundTotals, useCancellationQuote, useRefundSchedule } from "../api";
 import { CANCELLATION_STATUS, PAYMENT_METHODS } from "../constants";
 
 function Row({ label, children, strong }) {
@@ -105,11 +106,16 @@ export function RefundDialog({ cancellation, onDone }) {
   const { options, fallback } = useMoneyAccounts(method);
   const accountId = chosen || fallback;
   const [error, setError] = useState(null);
+  const totals = refundTotals(cancellation);
   return (
     <FormDialog
       open
       onOpenChange={(open) => !open && onDone()}
-      title={`Pay the ${formatBDT(cancellation.refundAmount)} refund`}
+      title={
+        totals.next
+          ? `Pay refund part ${totals.next.number} of ${totals.count}: ${formatBDT(totals.next.amount)}`
+          : `Pay the ${formatBDT(totals.due)} refund`
+      }
       description={`${cancellation.cancellationNo} · ${cancellation.booking?.customer?.fullName ?? ""}`}
       error={error}
       submitting={pay.isPending}
@@ -124,7 +130,11 @@ export function RefundDialog({ cancellation, onDone }) {
             paidOn,
             ...(accountId && { accountId }),
           });
-          toast.success("Refund recorded and posted");
+          toast.success(
+            totals.next && totals.count > 1
+              ? "Refund part paid and posted"
+              : "Refund paid and posted",
+          );
           onDone();
         } catch (apiError) {
           setError(apiError.message);
@@ -196,12 +206,161 @@ export function RefundDialog({ cancellation, onDone }) {
   );
 }
 
+const pad = (n) => String(n).padStart(2, "0");
+/** `start` (YYYY-MM-DD) plus k months, kept inside short months. */
+function addMonths(start, k) {
+  const [y, m, d] = start.split("-").map(Number);
+  const last = new Date(Date.UTC(y, m - 1 + k + 1, 0)).getUTCDate();
+  const date = new Date(Date.UTC(y, m - 1 + k, Math.min(d, last)));
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+/** `count` monthly parts of whole taka, the remainder on the last. */
+function evenParts(total, count, first) {
+  const each = Math.floor(total / count);
+  return Array.from({ length: count }, (_, k) => ({
+    dueDate: addMonths(first, k),
+    amount: String(k === count - 1 ? Math.round((total - each * (count - 1)) * 100) / 100 : each),
+  }));
+}
+
+/** Accounts split what is still to refund into dated parts (monthly by default, editable). */
+export function RefundScheduleDialog({ cancellation, onDone }) {
+  const save = useRefundSchedule();
+  const { due } = refundTotals(cancellation);
+  const [count, setCount] = useState("3");
+  const [first, setFirst] = useState(() => toDateInput(new Date().toISOString()));
+  const [parts, setParts] = useState(() =>
+    evenParts(due, 3, toDateInput(new Date().toISOString())),
+  );
+  const [error, setError] = useState(null);
+  const planned = parts.reduce((t, p) => t + (Number(p.amount) || 0), 0);
+  const balanced = Math.round(planned * 100) === Math.round(due * 100);
+  const regenerate = (n, date) => {
+    const k = Math.min(60, Math.max(1, Number(n) || 1));
+    setParts(evenParts(due, k, date));
+  };
+  return (
+    <FormDialog
+      open
+      onOpenChange={(open) => !open && onDone()}
+      title={`Pay the ${formatBDT(due)} refund in parts`}
+      description={`${cancellation.cancellationNo}. Pay refund then pays the next part due.`}
+      error={error}
+      submitting={save.isPending}
+      submitLabel="Save schedule"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        if (!balanced) {
+          setError(`The parts must add up to ${formatBDT(due)}`);
+          return;
+        }
+        try {
+          await save.mutateAsync({
+            id: cancellation.id,
+            parts: parts.map((p) => ({ dueDate: p.dueDate, amount: Number(p.amount) })),
+          });
+          toast.success("Refund schedule saved");
+          onDone();
+        } catch (apiError) {
+          setError(apiError.message);
+        }
+      }}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="count">Monthly parts</Label>
+          <Input
+            id="count"
+            inputMode="numeric"
+            value={count}
+            onChange={(e) => {
+              setCount(e.target.value);
+              if (Number(e.target.value) > 0) regenerate(e.target.value, first);
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="first">First payment</Label>
+          <Input
+            id="first"
+            type="date"
+            value={first}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              setFirst(e.target.value);
+              regenerate(count, e.target.value);
+            }}
+          />
+        </div>
+      </div>
+      <div className="max-h-64 space-y-2 overflow-y-auto">
+        {parts.map((part, index) => (
+          <div key={index} className="grid grid-cols-[2rem_1fr_9rem] items-center gap-2">
+            <span className="text-muted-foreground text-sm tabular-nums">{index + 1}</span>
+            <Input
+              type="date"
+              aria-label={`Part ${index + 1} date`}
+              value={part.dueDate}
+              onChange={(e) =>
+                setParts(parts.map((p, i) => (i === index ? { ...p, dueDate: e.target.value } : p)))
+              }
+            />
+            <Input
+              inputMode="decimal"
+              className="text-right"
+              aria-label={`Part ${index + 1} amount`}
+              value={part.amount}
+              onChange={(e) =>
+                setParts(parts.map((p, i) => (i === index ? { ...p, amount: e.target.value } : p)))
+              }
+            />
+          </div>
+        ))}
+      </div>
+      <p
+        className={cn(
+          "rounded-lg border p-2.5 text-right text-sm tabular-nums",
+          balanced ? "border-emerald-500/40" : "border-amber-500/40",
+        )}
+      >
+        {formatBDT(planned)} of {formatBDT(due)}
+        {!balanced &&
+          ` · ${formatBDT(Math.abs(due - planned))} ${planned > due ? "too much" : "short"}`}
+      </p>
+    </FormDialog>
+  );
+}
+
+/** The refund's parts: due or paid, with dates. */
+function RefundParts({ parts }) {
+  if (parts.length < 2 && parts.every((p) => p.status === "PAID")) return null;
+  return (
+    <ol className="divide-y rounded-md border text-sm">
+      {parts.map((p) => (
+        <li key={p.id} className="flex items-center justify-between gap-3 px-2.5 py-1.5">
+          <span className="text-muted-foreground tabular-nums">
+            {p.number}. {formatDateOnly(p.status === "PAID" ? p.paidOn : p.dueDate)}
+          </span>
+          <span className="flex items-center gap-2 tabular-nums">
+            {formatBDT(p.amount)}
+            <StatusBadge tone={p.status === "PAID" ? "green" : "gray"}>
+              {p.status === "PAID" ? "Paid" : "Due"}
+            </StatusBadge>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /** The booking's latest cancellation, with its actions. */
 export function CancellationCard({ cancellation, booking }) {
   const can = useCan();
   const withdraw = cancellations.usePostAction("withdraw");
   const [paying, setPaying] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
   const status = CANCELLATION_STATUS[cancellation.status];
+  const totals = refundTotals(cancellation);
   return (
     <Card
       className={cancellation.status === "PENDING_APPROVAL" ? "border-amber-500/40" : undefined}
@@ -222,9 +381,18 @@ export function CancellationCard({ cancellation, booking }) {
             {formatBDT(cancellation.refundAmount)}
           </Row>
         </dl>
-        {cancellation.refundPaidOn && (
+        <RefundParts parts={cancellation.refundParts ?? []} />
+        {cancellation.status === "APPROVED" && totals.paid > 0 && (
           <p className="text-muted-foreground text-xs">
-            Refund paid {formatDateOnly(cancellation.refundPaidOn)}
+            {formatBDT(totals.paid)} paid, {formatBDT(totals.due)} still to pay
+          </p>
+        )}
+        {cancellation.status === "REFUNDED" && cancellation.refundParts?.length > 0 && (
+          <p className="text-muted-foreground text-xs">
+            Refund paid
+            {cancellation.refundParts.length === 1
+              ? ` ${formatDateOnly(cancellation.refundParts[0].paidOn)}`
+              : ` in ${cancellation.refundParts.length} parts`}
           </p>
         )}
         {cancellation.closeReason && (
@@ -239,9 +407,14 @@ export function CancellationCard({ cancellation, booking }) {
             </Button>
           )}
           {cancellation.status === "APPROVED" && can("cancellation.refund") && (
-            <Button size="sm" onClick={() => setPaying(true)}>
-              <Banknote /> Pay refund
-            </Button>
+            <>
+              <Button size="sm" onClick={() => setPaying(true)}>
+                <Banknote /> {totals.next ? `Pay part ${totals.next.number}` : "Pay refund"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setScheduling(true)}>
+                <CalendarRange /> {totals.count > 0 ? "Re-plan parts" : "Pay in parts"}
+              </Button>
+            </>
           )}
           {cancellation.status === "PENDING_APPROVAL" && can("cancellation.create") && (
             <Button
@@ -262,6 +435,9 @@ export function CancellationCard({ cancellation, booking }) {
           )}
         </div>
       </CardContent>
+      {scheduling && (
+        <RefundScheduleDialog cancellation={cancellation} onDone={() => setScheduling(false)} />
+      )}
       {paying && (
         <RefundDialog
           cancellation={{ ...cancellation, booking: { customer: booking.customer } }}
