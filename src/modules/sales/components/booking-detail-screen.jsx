@@ -3,7 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CircleX, ClipboardCheck, Landmark, Undo2, Wallet } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowLeftRight,
+  CircleX,
+  ClipboardCheck,
+  Landmark,
+  Undo2,
+  Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +48,7 @@ import {
   planTerms,
 } from "../constants";
 import { CancelBookingDialog, CancellationCard } from "./cancellation-parts";
+import { TransferBookingDialog, TransferCard } from "./transfer-parts";
 import PaymentDialog from "./payment-dialog";
 
 const APPROVAL_TEXT = {
@@ -275,6 +284,12 @@ function RegisterDialog({ booking, onDone }) {
   );
 }
 
+const OPEN = ["PENDING_APPROVAL", "APPROVED"];
+/** A cancellation or transfer is under way. */
+const busy = (booking) =>
+  booking.cancellations.some((c) => OPEN.includes(c.status)) ||
+  booking.transfers.some((t) => OPEN.includes(t.status));
+
 export default function BookingDetailScreen() {
   const { id } = useParams();
   const { user: me } = useAuth();
@@ -283,6 +298,7 @@ export default function BookingDetailScreen() {
   const [paying, setPaying] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const can = useCan();
 
   return (
@@ -317,20 +333,21 @@ export default function BookingDetailScreen() {
                       <Wallet /> Record payment
                     </Button>
                   )}
-                {booking.status === "CONFIRMED" &&
-                  can("cancellation.create") &&
-                  !booking.cancellations.some((c) =>
-                    ["PENDING_APPROVAL", "APPROVED"].includes(c.status),
-                  ) && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      onClick={() => setCancelling(true)}
-                    >
-                      <CircleX /> Cancel booking
-                    </Button>
-                  )}
+                {booking.status === "CONFIRMED" && can("transfer.create") && !busy(booking) && (
+                  <Button size="sm" variant="outline" onClick={() => setTransferring(true)}>
+                    <ArrowLeftRight /> Transfer
+                  </Button>
+                )}
+                {booking.status === "CONFIRMED" && can("cancellation.create") && !busy(booking) && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    onClick={() => setCancelling(true)}
+                  >
+                    <CircleX /> Cancel booking
+                  </Button>
+                )}
                 {booking.status === "CONFIRMED" && can("booking.register") && (
                   <Button size="sm" variant="outline" onClick={() => setRegistering(true)}>
                     <Landmark /> Register
@@ -368,6 +385,7 @@ export default function BookingDetailScreen() {
                   <Prices booking={booking} />
                 </CardContent>
               </Card>
+              {booking.transfers[0] && <TransferCard transfer={booking.transfers[0]} />}
               {booking.cancellations[0] && (
                 <CancellationCard cancellation={booking.cancellations[0]} booking={booking} />
               )}
@@ -429,6 +447,18 @@ export default function BookingDetailScreen() {
                       </Link>
                     </Row>
                     <Row label="Mobile">{formatMobile(booking.customer.mobile)}</Row>
+                    {booking.transfers
+                      .filter((t) => t.status === "COMPLETED")
+                      .map((t) => (
+                        <Row key={t.id} label="Earlier owner">
+                          <Link href={`/customers/${t.fromCustomer.id}`} className="underline">
+                            {t.fromCustomer.fullName}
+                          </Link>{" "}
+                          <span className="text-muted-foreground">
+                            until {formatDateOnly(t.completedOn)}
+                          </span>
+                        </Row>
+                      ))}
                     <Row label="Plot">
                       {booking.plot.code}
                       {booking.plot.block && ` · ${booking.plot.block.name}`}
@@ -446,6 +476,7 @@ export default function BookingDetailScreen() {
                     <p>{planTerms(booking.planTerms).interest}</p>
                     <p>{planTerms(booking.planTerms).lateFee}</p>
                     <p>{planTerms(booking.planTerms).cancellation}</p>
+                    <p>{planTerms(booking.planTerms).transfer}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -456,6 +487,9 @@ export default function BookingDetailScreen() {
           {registering && <RegisterDialog booking={booking} onDone={() => setRegistering(false)} />}
           {cancelling && (
             <CancelBookingDialog booking={booking} onDone={() => setCancelling(false)} />
+          )}
+          {transferring && (
+            <TransferBookingDialog booking={booking} onDone={() => setTransferring(false)} />
           )}
         </>
       )}

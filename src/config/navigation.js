@@ -25,6 +25,7 @@ import {
   Wallet,
   Workflow,
   Building2,
+  ArrowLeftRight,
 } from "lucide-react";
 
 /**
@@ -130,6 +131,14 @@ export const navigation = [
         icon: CircleX,
         module: "cancellation",
         permission: "cancellation.view",
+        phase: 3,
+      },
+      {
+        title: "Transfers",
+        href: "/transfers",
+        icon: ArrowLeftRight,
+        module: "transfer",
+        permission: "transfer.view",
         phase: 3,
       },
     ],

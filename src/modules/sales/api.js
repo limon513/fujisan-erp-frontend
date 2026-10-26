@@ -9,6 +9,16 @@ export const bookings = createResource("/bookings");
 export const collections = createResource("/collections");
 export const installments = createResource("/installments");
 export const cancellations = createResource("/cancellations");
+export const transfers = createResource("/transfers");
+
+/** The plan's transfer fee for a booking and what has been paid on it. */
+export const useTransferQuote = (bookingId, { enabled = true } = {}) =>
+  useQuery({
+    queryKey: ["transfers", "quote", bookingId],
+    queryFn: () => http.get("/transfers/quote", { bookingId }).then((res) => res.data),
+    enabled: Boolean(bookingId) && enabled,
+    retry: false,
+  });
 
 /** What cancelling a booking would refund (paid − the plan's cancellation charge). */
 export const useCancellationQuote = (bookingId, { enabled = true } = {}) =>

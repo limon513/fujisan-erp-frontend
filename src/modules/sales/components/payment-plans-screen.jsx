@@ -144,6 +144,7 @@ function PlanCard({ plan, canEdit, canDelete, onEdit, onDelete, onCalculate }) {
         <p className="text-muted-foreground">{terms.interest}</p>
         <p className="text-muted-foreground">{terms.lateFee}</p>
         <p className="text-muted-foreground">{terms.cancellation}</p>
+        <p className="text-muted-foreground">{terms.transfer}</p>
         {plan.description && (
           <p className="text-muted-foreground pt-1 italic">{plan.description}</p>
         )}
@@ -173,7 +174,7 @@ export default function PaymentPlansScreen() {
     <>
       <PageHeader
         title="Payment plans"
-        description="Ready-made payment terms chosen at booking: down payment, installments, interest, late fee and cancellation charge."
+        description="Ready-made payment terms chosen at booking: down payment, installments, interest, late fee, cancellation charge and transfer fee."
         actions={
           can("payment-plan.create") && (
             <Button onClick={() => setEditing("new")}>

@@ -57,9 +57,11 @@ const schema = z
     lateFeeValue: amount,
     cancellationChargeType: z.enum(["FIXED", "PERCENT"]),
     cancellationChargeValue: amount,
+    transferFeeType: z.enum(["FIXED", "PERCENT"]),
+    transferFeeValue: amount,
   })
   .superRefine((v, ctx) => {
-    for (const key of ["downPayment", "lateFee", "cancellationCharge"]) {
+    for (const key of ["downPayment", "lateFee", "cancellationCharge", "transferFee"]) {
       if (v[`${key}Type`] === "PERCENT" && Number(v[`${key}Value`]) > 100) {
         ctx.addIssue({ code: "custom", path: [`${key}Value`], message: "At most 100%" });
       }
@@ -92,6 +94,8 @@ const DEFAULTS = {
   lateFeeValue: "500",
   cancellationChargeType: "PERCENT",
   cancellationChargeValue: "10",
+  transferFeeType: "FIXED",
+  transferFeeValue: "0",
 };
 
 const TERMS = [
@@ -105,6 +109,8 @@ const TERMS = [
   "lateFeeValue",
   "cancellationChargeType",
   "cancellationChargeValue",
+  "transferFeeType",
+  "transferFeeValue",
 ];
 
 const num = (v) => String(Number(v));
@@ -126,6 +132,8 @@ const toValues = (plan) =>
         lateFeeValue: num(plan.lateFeeValue),
         cancellationChargeType: plan.cancellationChargeType,
         cancellationChargeValue: num(plan.cancellationChargeValue),
+        transferFeeType: plan.transferFeeType,
+        transferFeeValue: num(plan.transferFeeValue),
       }
     : DEFAULTS;
 
@@ -137,9 +145,10 @@ const toBody = (values) => ({
   gracePeriodDays: Number(values.gracePeriodDays),
   lateFeeValue: Number(values.lateFeeValue),
   cancellationChargeValue: Number(values.cancellationChargeValue),
+  transferFeeValue: Number(values.transferFeeValue),
 });
 
-/** ৳ / % switch plus the value, for down payment, late fee and cancellation charge. */
+/** ৳ / % switch plus the value, for down payment, late fee, cancellation charge and transfer fee. */
 function ChargeField({ control, typeName, valueName, label, percentOf }) {
   const type = useWatch({ control, name: typeName });
   return (
@@ -319,7 +328,7 @@ export default function PlanEditorSheet({ plan, open, onOpenChange }) {
                 </FieldGroup>
               </FieldSet>
               <FieldSet>
-                <FieldLegend>Late payment and cancellation</FieldLegend>
+                <FieldLegend>Late payment, cancellation and transfer</FieldLegend>
                 <FieldGroup>
                   <FormField
                     control={control}
@@ -341,6 +350,13 @@ export default function PlanEditorSheet({ plan, open, onOpenChange }) {
                     valueName="cancellationChargeValue"
                     label="Cancellation charge"
                     percentOf="the amount paid"
+                  />
+                  <ChargeField
+                    control={control}
+                    typeName="transferFeeType"
+                    valueName="transferFeeValue"
+                    label="Ownership transfer fee"
+                    percentOf="the net price"
                   />
                 </FieldGroup>
               </FieldSet>

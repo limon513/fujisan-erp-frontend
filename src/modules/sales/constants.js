@@ -29,6 +29,10 @@ export function planTerms(plan) {
       Number(plan.cancellationChargeValue) > 0
         ? `Cancellation charge ${chargeText(plan.cancellationChargeType, plan.cancellationChargeValue, "the amount paid")}`
         : "No cancellation charge",
+    transfer:
+      Number(plan.transferFeeValue ?? 0) > 0
+        ? `Transfer fee ${chargeText(plan.transferFeeType, plan.transferFeeValue, "the net price")}`
+        : "No transfer fee",
   };
 }
 
@@ -71,6 +75,14 @@ export const CANCELLATION_STATUS = {
   PENDING_APPROVAL: { label: "Waiting for approval", tone: "amber" },
   APPROVED: { label: "Refund due", tone: "blue" },
   REFUNDED: { label: "Refunded", tone: "green" },
+  REJECTED: { label: "Rejected", tone: "red" },
+  WITHDRAWN: { label: "Withdrawn", tone: "gray" },
+};
+
+export const TRANSFER_STATUS = {
+  PENDING_APPROVAL: { label: "Waiting for approval", tone: "amber" },
+  APPROVED: { label: "Fee due", tone: "blue" },
+  COMPLETED: { label: "Completed", tone: "green" },
   REJECTED: { label: "Rejected", tone: "red" },
   WITHDRAWN: { label: "Withdrawn", tone: "gray" },
 };
