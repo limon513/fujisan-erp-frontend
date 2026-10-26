@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, FileText, FileUp, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, FileUp, Pencil, Plus, ScrollText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -411,6 +411,13 @@ export default function CustomerDetailScreen() {
                 <Button asChild>
                   <Link href={`/bookings/new?customerId=${customer.id}`}>
                     <FileText /> New booking
+                  </Link>
+                </Button>
+              )}
+              {can("report.view") && (
+                <Button variant="outline" asChild>
+                  <Link href={`/statements/${customer.id}`} target="_blank">
+                    <ScrollText /> Statement
                   </Link>
                 </Button>
               )}

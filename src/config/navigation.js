@@ -172,7 +172,14 @@ export const navigation = [
       },
       { title: "Legal", href: "/legal", icon: Scale, module: "legal", phase: 4 },
       { title: "Marketing", href: "/marketing", icon: Megaphone, module: "marketing", phase: 5 },
-      { title: "Reports", href: "/reports", icon: BarChart3, module: "report", phase: 5 },
+      {
+        title: "Reports",
+        href: "/reports",
+        icon: BarChart3,
+        module: "report",
+        permission: "report.view",
+        phase: 3,
+      },
     ],
   },
   {

@@ -12,6 +12,7 @@ import { useFollowUpCounts, useVisitCounts } from "@/modules/crm/api";
 import PlotStatusBar from "@/modules/project/components/plot-status-bar";
 import { PLOT_STATUS } from "@/modules/project/constants";
 import { useDashboard } from "../api";
+import BusinessOverview from "./business-overview";
 
 /** Stat tile: label, one big number, optional supporting line. */
 function StatTile({ label, value, sub, dot, href }) {
@@ -100,7 +101,7 @@ function Inventory({ inventory }) {
           label="Booked"
           dot={PLOT_STATUS.BOOKED.color}
           value={formatNumber(totals.BOOKED)}
-          sub="Booking arrives in Phase 3"
+          sub="Confirmed, not yet registered"
         />
         <StatTile
           label="Sold"
@@ -184,6 +185,7 @@ export default function DashboardScreen() {
         </div>
       ) : (
         <>
+          {can("report.view") && <BusinessOverview />}
           {data.inventory && <Inventory inventory={data.inventory} />}
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -268,7 +270,7 @@ export default function DashboardScreen() {
             </div>
           </div>
 
-          {!data.inventory && !data.customers && !data.myHolds && (
+          {!data.inventory && !data.customers && !data.myHolds && !can("report.view") && (
             <Card>
               <CardContent className="text-muted-foreground flex items-center gap-3 py-8 text-sm">
                 <Users className="size-5" /> Your role doesn&apos;t include any dashboard figures
@@ -278,8 +280,7 @@ export default function DashboardScreen() {
           )}
 
           <p className="text-muted-foreground text-xs">
-            Sales, collection and outstanding figures appear here once Booking, EMI and Collection
-            (Phase 3) are built. Updated {formatDateTime(data.generatedAt)}.
+            Updated {formatDateTime(data.generatedAt)}.
           </p>
         </>
       )}
