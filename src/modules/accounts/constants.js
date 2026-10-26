@@ -18,3 +18,10 @@ export function withDepth(accounts) {
   const depth = (a) => (a.parentId && byId.has(a.parentId) ? depth(byId.get(a.parentId)) + 1 : 0);
   return accounts.map((a) => ({ ...a, depth: depth(a) }));
 }
+
+/** "Eastern Bank PLC ••4471" for a bank account with details, else "". */
+export function bankLabel(account) {
+  if (!account?.isBank || account.isGroup) return "";
+  const number = account.accountNumber?.replace(/\D/g, "");
+  return [account.bankName, number && `••${number.slice(-4)}`].filter(Boolean).join(" ");
+}

@@ -47,6 +47,27 @@ export default function LedgerScreen() {
             title={`${data.account.code} ${data.account.name}`}
             description={`${ACCOUNT_TYPES[data.account.type]} · balance ${formatBDT(data.closingBalance)}${to ? ` on ${formatDateOnly(data.to)}` : " today"}`}
           />
+          {data.account.isBank && data.account.accountNumber && (
+            <dl className="text-muted-foreground -mt-2 mb-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              {[
+                [
+                  "Bank",
+                  [data.account.bankName, data.account.bankBranch].filter(Boolean).join(", "),
+                ],
+                ["Title", data.account.accountTitle],
+                ["Account no.", data.account.accountNumber],
+                ["Routing", data.account.routingNumber],
+                ["SWIFT", data.account.swiftCode],
+              ]
+                .filter(([, v]) => v)
+                .map(([k, v]) => (
+                  <div key={k} className="flex gap-1.5">
+                    <dt>{k}</dt>
+                    <dd className="text-foreground tabular-nums">{v}</dd>
+                  </div>
+                ))}
+            </dl>
+          )}
           <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <label htmlFor="from" className="text-muted-foreground">

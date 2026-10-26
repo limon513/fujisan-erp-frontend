@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { formatBDT, formatDateOnly, toDateInput } from "@/lib/format";
 import { useCan } from "@/modules/auth/auth-provider";
 import { useMoneyAccounts } from "@/modules/accounts/api";
+import { bankLabel } from "@/modules/accounts/constants";
 import { cancellations, refundTotals, useCancellationQuote, useRefundSchedule } from "../api";
 import { CANCELLATION_STATUS, PAYMENT_METHODS } from "../constants";
 
@@ -184,6 +185,7 @@ export function RefundDialog({ cancellation, onDone }) {
               {options.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.code} {a.name}
+                  {bankLabel(a) && ` · ${bankLabel(a)}`}
                 </SelectItem>
               ))}
             </SelectContent>

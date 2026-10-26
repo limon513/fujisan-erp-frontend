@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 import { useCan } from "@/modules/auth/auth-provider";
 import { SwitchField } from "@/modules/organization/components/fields";
 import { accounts, useAccounts } from "../api";
-import { ACCOUNT_TYPES, withDepth } from "../constants";
+import { ACCOUNT_TYPES, bankLabel, withDepth } from "../constants";
 
 const TOP = "__top__";
 
@@ -53,8 +53,26 @@ const schema = z
     type: z.string(),
     isGroup: z.boolean(),
     description: z.string().max(300),
+    bankName: z.string().max(120),
+    bankBranch: z.string().max(120),
+    accountTitle: z.string().max(150),
+    accountNumber: z.string().regex(/^([0-9 -]{6,30})?$/, "Digits only (6–30)"),
+    routingNumber: z.string().regex(/^(\d{9})?$/, "9 digits"),
+    swiftCode: z
+      .string()
+      .regex(/^([A-Za-z0-9]{8}([A-Za-z0-9]{3})?)?$/, "8 or 11 letters and digits"),
   })
   .refine((v) => v.parentId !== TOP || v.type, { message: "Choose the type", path: ["type"] });
+
+const BANK_FIELDS = [
+  "bankName",
+  "bankBranch",
+  "accountTitle",
+  "accountNumber",
+  "routingNumber",
+  "swiftCode",
+];
+const bankValues = (account) => Object.fromEntries(BANK_FIELDS.map((k) => [k, account?.[k] ?? ""]));
 
 function AccountDialog({ account, parent, groups, onDone }) {
   const create = accounts.useCreate();
@@ -71,6 +89,7 @@ function AccountDialog({ account, parent, groups, onDone }) {
           type: account.type,
           isGroup: account.isGroup,
           description: account.description ?? "",
+          ...bankValues(account),
         }
       : {
           code: "",
@@ -79,9 +98,17 @@ function AccountDialog({ account, parent, groups, onDone }) {
           type: "",
           isGroup: false,
           description: "",
+          ...bankValues(null),
         },
   });
   const parentId = useWatch({ control: form.control, name: "parentId" });
+  const isGroup = useWatch({ control: form.control, name: "isGroup" });
+  // Bank details belong on bank accounts: under a bank group, or one already marked as a bank
+  const isBank = editing
+    ? account.isBank && !account.isGroup
+    : !isGroup && Boolean(groups.find((g) => g.id === parentId)?.isBank);
+  const bankBody = (values) =>
+    isBank ? Object.fromEntries(BANK_FIELDS.map((k) => [k, values[k].trim() || null])) : {};
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
@@ -92,6 +119,7 @@ function AccountDialog({ account, parent, groups, onDone }) {
           code: values.code,
           name: values.name,
           description: values.description,
+          ...bankBody(values),
         });
       } else {
         await create.mutateAsync({
@@ -99,13 +127,22 @@ function AccountDialog({ account, parent, groups, onDone }) {
           name: values.name,
           isGroup: values.isGroup,
           description: values.description,
+          ...bankBody(values),
           ...(values.parentId === TOP ? { type: values.type } : { parentId: values.parentId }),
         });
       }
       toast.success(editing ? "Account updated" : `${values.code} ${values.name} added`);
       onDone();
     } catch (apiError) {
-      if (!applyApiErrors(apiError, form.setError, ["code", "name", "parentId", "type"]))
+      if (
+        !applyApiErrors(apiError, form.setError, [
+          "code",
+          "name",
+          "parentId",
+          "type",
+          ...BANK_FIELDS,
+        ])
+      )
         setError(apiError.message);
     }
   });
@@ -191,6 +228,46 @@ function AccountDialog({ account, parent, groups, onDone }) {
             description="Groups organise accounts; postings go to the accounts under them."
           />
         </>
+      )}
+      {isBank && (
+        <fieldset className="space-y-4 rounded-lg border p-3">
+          <legend className="px-1 text-sm font-medium">Bank details</legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="bankName"
+              label="Bank"
+              placeholder="Eastern Bank PLC"
+            />
+            <FormField
+              control={form.control}
+              name="bankBranch"
+              label="Branch"
+              placeholder="Gulshan"
+            />
+          </div>
+          <FormField
+            control={form.control}
+            name="accountTitle"
+            label="Account title"
+            placeholder="Fujisan Properties Ltd."
+          />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="accountNumber"
+              label="Account number"
+              inputMode="numeric"
+            />
+            <FormField
+              control={form.control}
+              name="routingNumber"
+              label="Routing number"
+              inputMode="numeric"
+            />
+            <FormField control={form.control} name="swiftCode" label="SWIFT" />
+          </div>
+        </fieldset>
       )}
       <FormField control={form.control} name="description" label="Note" description="Optional" />
     </FormDialog>
@@ -283,6 +360,11 @@ export default function ChartScreen() {
                             <Link href={`/accounts/${a.id}`} className="hover:underline">
                               {a.name}
                             </Link>
+                          )}
+                          {bankLabel(a) && (
+                            <span className="text-muted-foreground hidden text-xs md:inline">
+                              {bankLabel(a)}
+                            </span>
                           )}
                           {a.systemKey && (
                             <StatusBadge className="hidden md:inline-flex">auto</StatusBadge>

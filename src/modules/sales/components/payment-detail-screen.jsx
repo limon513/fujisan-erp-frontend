@@ -25,6 +25,7 @@ import { formatBDT, formatDateOnly, formatDateTime, formatMobile } from "@/lib/f
 import { toastError } from "@/lib/notify";
 import { useAuth, useCan } from "@/modules/auth/auth-provider";
 import { useMoneyAccounts } from "@/modules/accounts/api";
+import { bankLabel } from "@/modules/accounts/constants";
 import { collections } from "../api";
 import { installmentLabel, PAYMENT_METHODS, PAYMENT_STATUS } from "../constants";
 
@@ -115,6 +116,7 @@ function VerifyDialog({ payment, onDone }) {
             {options.map((a) => (
               <SelectItem key={a.id} value={a.id}>
                 {a.code} {a.name}
+                {bankLabel(a) && ` · ${bankLabel(a)}`}
               </SelectItem>
             ))}
           </SelectContent>

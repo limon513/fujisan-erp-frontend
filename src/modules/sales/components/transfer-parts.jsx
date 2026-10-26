@@ -23,6 +23,7 @@ import StatusBadge from "@/components/common/status-badge";
 import { formatBDT, formatDateOnly, formatFileSize, toDateInput } from "@/lib/format";
 import { useCan } from "@/modules/auth/auth-provider";
 import { useMoneyAccounts } from "@/modules/accounts/api";
+import { bankLabel } from "@/modules/accounts/constants";
 import { customers } from "@/modules/customer/api";
 import { transfers, uploadAgreement, useReplaceAgreement, useTransferQuote } from "../api";
 import { PAYMENT_METHODS, TRANSFER_STATUS } from "../constants";
@@ -222,6 +223,7 @@ export function CompleteTransferDialog({ transfer, onDone }) {
               {options.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   {a.code} {a.name}
+                  {bankLabel(a) && ` · ${bankLabel(a)}`}
                 </SelectItem>
               ))}
             </SelectContent>
