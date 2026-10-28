@@ -163,6 +163,11 @@ export const navigation = [
           { title: "Balance Sheet", href: "/accounts/balance-sheet", permission: "account.view" },
           { title: "Cash & Bank Book", href: "/accounts/cash-book", permission: "account.view" },
           { title: "Cash Flow", href: "/accounts/cash-flow", permission: "account.view" },
+          {
+            title: "Bank Reconciliation",
+            href: "/accounts/bank-reconciliation",
+            permission: "bank-reconciliation.view",
+          },
           { title: "Fiscal Years", href: "/accounts/fiscal-years", permission: "fiscal-year.view" },
         ],
       },

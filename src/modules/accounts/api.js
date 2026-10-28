@@ -92,3 +92,45 @@ export const useStatement = (name, params) =>
     queryFn: () => http.get(`/accounts/${name}`, cleanParams(params)).then((res) => res.data),
     placeholderData: keepPreviousData,
   });
+
+// ---- Bank reconciliation --------------------------------------------------------------------
+
+const RECON = "/bank-reconciliation";
+
+export const useReconAccounts = () =>
+  useQuery({
+    queryKey: ["bank-reconciliation", "accounts"],
+    queryFn: () => http.get(`${RECON}/accounts`).then((res) => res.data),
+  });
+
+export const useBankStatements = (accountId) =>
+  useQuery({
+    queryKey: ["bank-reconciliation", "statements", accountId],
+    queryFn: () => http.get(`${RECON}/statements`, { accountId }).then((res) => res.data),
+    enabled: Boolean(accountId),
+  });
+
+export const useBankStatement = (id) =>
+  useQuery({
+    queryKey: ["bank-reconciliation", "statement", id],
+    queryFn: () => http.get(`${RECON}/statements/${id}`).then((res) => res.data),
+    enabled: Boolean(id),
+    placeholderData: keepPreviousData,
+  });
+
+export const useMatchCandidates = (lineId) =>
+  useQuery({
+    queryKey: ["bank-reconciliation", "candidates", lineId],
+    queryFn: () => http.get(`${RECON}/lines/${lineId}/candidates`).then((res) => res.data),
+    enabled: Boolean(lineId),
+  });
+
+/** Statement actions; each answers with the updated statement. */
+export function useReconAction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ path, body, method = "post" }) =>
+      http[method](`${RECON}${path}`, body).then((res) => res.data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["bank-reconciliation"] }),
+  });
+}
