@@ -69,14 +69,26 @@ export const DEPOSIT_KEYS = {
  * Cash, bank and mobile accounts (those under the same groups as the seeded money accounts),
  * and the default one for a payment method.
  */
+const MONEY_KEYS = ["CASH", "BANK", "BKASH", "NAGAD"];
+
 export function useMoneyAccounts(method) {
   const { data: assets = [] } = useAccounts({ postable: true, type: "ASSET" });
+  // Same rule as the API's money accounts: a group shared with accounts used for something else
+  // (Cash in hand beside Customer receivable) adds nothing but the money account itself
+  const isMoney = (a) => MONEY_KEYS.includes(a.systemKey);
+  const mixed = new Set(assets.filter((a) => a.systemKey && !isMoney(a)).map((a) => a.parentId));
   const parents = new Set(
-    assets
-      .filter((a) => ["CASH", "BANK", "BKASH", "NAGAD"].includes(a.systemKey))
-      .map((a) => a.parentId),
+    assets.filter((a) => isMoney(a) && !mixed.has(a.parentId)).map((a) => a.parentId),
   );
-  const options = assets.filter((a) => parents.has(a.parentId));
+  const options = assets.filter((a) => isMoney(a) || a.isBank || parents.has(a.parentId));
   const fallback = options.find((a) => a.systemKey === DEPOSIT_KEYS[method])?.id ?? "";
   return { options, fallback };
 }
+
+/** A financial statement: profit-and-loss, balance-sheet, cash-book, cash-flow. */
+export const useStatement = (name, params) =>
+  useQuery({
+    queryKey: ["accounts", "statements", name, params],
+    queryFn: () => http.get(`/accounts/${name}`, cleanParams(params)).then((res) => res.data),
+    placeholderData: keepPreviousData,
+  });
