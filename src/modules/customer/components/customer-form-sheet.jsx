@@ -79,10 +79,13 @@ export default function CustomerFormSheet({ open, onOpenChange, customer, initia
   // handed to onSaved once the sheet's close animation has finished (see FormDialog.onClosed)
   const [saved, setSaved] = useState(null);
   const isNew = !customer;
-  // Assigning another owner needs customer access wider than OWN (mirrors the API)
+  // Assigning another owner needs customer access wider than OWN (mirrors the API), and the
+  // employee list to choose from
   const canAssign =
     me.isSuperAdmin ||
-    (me.permissions["customer.create"] && me.permissions["customer.create"] !== "OWN");
+    (me.permissions["customer.create"] &&
+      me.permissions["customer.create"] !== "OWN" &&
+      Boolean(me.permissions["employee.view"]));
 
   const form = useForm({
     resolver: zodResolver(schema),

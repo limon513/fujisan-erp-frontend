@@ -118,7 +118,7 @@ export default function CustomersScreen() {
                 }}
               />
             </div>
-            {scope !== "OWN" && (
+            {scope !== "OWN" && can("employee.view") && (
               <div className="sm:w-56">
                 <ResourceSelect
                   resource={employees}
